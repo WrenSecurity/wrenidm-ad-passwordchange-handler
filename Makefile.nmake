@@ -26,8 +26,8 @@ CC = cl
 LINK = link
 RC = rc
 
-IDM_DLL_OBJ = out\utils.obj out\log.obj out\network.obj out\config.obj out\sync.obj
-IDM_SVC_OBJ = out\utils.obj out\log.obj out\network.obj out\config.obj out\service.obj out\proc.obj
+IDM_DLL_OBJ = out\utils.obj out\log.obj out\network.obj out\sync.obj
+IDM_SVC_OBJ = out\utils.obj out\log.obj out\network.obj out\service.obj out\proc.obj
 
 DEP_LIBS = kernel32.lib user32.lib advapi32.lib winhttp.lib crypt32.lib
 

@@ -22,22 +22,22 @@
 ; "Portions Copyrighted [2012] [Forgerock Inc]"
 ;
 
-#define MyAppName "OpenIDM Password Sync"
-#define MyAppVersion "2.1.0"
-#define MyAppPublisher "ForgeRock Inc"
-#define MyAppURL "http://www.forgerock.com/"
+#define IDMAppName "OpenIDM Password Sync"
+#define IDMAppVersion "2.1.0"
+#define IDMAppPublisher "ForgeRock Inc"
+#define IDMAppURL "http://www.forgerock.com/"
 
 [Setup]
 AppId={{7D1925B1-E009-4417-ABB4-CD427ABA49F7}
-AppName={#MyAppName}
-AppVersion={#MyAppVersion}
-AppVerName={#MyAppName}
-AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}
-AppUpdatesURL={#MyAppURL}
-DefaultDirName={pf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
+AppName={#IDMAppName}
+AppVersion={#IDMAppVersion}
+AppVerName={#IDMAppName}
+AppPublisher={#IDMAppPublisher}
+AppPublisherURL={#IDMAppURL}
+AppSupportURL={#IDMAppURL}
+AppUpdatesURL={#IDMAppURL}
+DefaultDirName={pf}\{#IDMAppName}
+DefaultGroupName={#IDMAppName}
 DisableProgramGroupPage=yes
 LicenseFile=license.txt
 OutputDir=.\out\
