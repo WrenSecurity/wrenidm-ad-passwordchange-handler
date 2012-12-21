@@ -1,0 +1,68 @@
+#
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+#
+# Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+#
+# The contents of this file are subject to the terms
+# of the Common Development and Distribution License
+# (the License). You may not use this file except in
+# compliance with the License.
+#
+# You can obtain a copy of the License at
+# http://forgerock.org/license/CDDLv1.0.html
+# See the License for the specific language governing
+# permission and limitations under the License.
+#
+# When distributing Covered Code, include this CDDL
+# Header Notice in each file and include the License file
+# at http://forgerock.org/license/CDDLv1.0.html
+# If applicable, add the following below the CDDL Header,
+# with the fields enclosed by brackets [] replaced by
+# your own identifying information:
+# "Portions Copyrighted [2012] [Forgerock Inc]"
+#
+
+CC = cl
+LINK = link
+RC = rc
+
+IDM_DLL_OBJ = out\utils.obj out\log.obj out\network.obj out\config.obj out\sync.obj
+IDM_SVC_OBJ = out\utils.obj out\log.obj out\network.obj out\config.obj out\service.obj out\proc.obj
+
+DEP_LIBS = kernel32.lib user32.lib advapi32.lib winhttp.lib crypt32.lib
+
+LDFLAGS = /NOLOGO /INCREMENTAL:NO /errorReport:none /MANIFEST:NO \
+   /OPT:REF /OPT:ICF /LTCG /DYNAMICBASE /NXCOMPAT /DEBUG \
+!IFDEF X64
+   /MACHINE:X64
+!ELSE
+   /MACHINE:X86
+!ENDIF
+
+CFLAGS = /O2 /Oi /GL /Gy /D _CRT_SECURE_NO_WARNINGS \
+   /wd4996 /wd4101 /wd4244 /wd4995 /wd4275 /EHsc /nologo /Zi /errorReport:none \
+   /I".\include" /MT /W3 /c /TC /D WIN32 /D _WIN32_WINNT=0x0600 \
+   /D UNICODE /D _UNICODE 
+
+.c.obj::
+    $(CC) $(CFLAGS) /Fdout\ /Foout\ $<
+
+IDM_DLL_SRC = $(IDM_DLL_OBJ:out\=source\)
+IDM_DLL_OBJECTS = $(IDM_DLL_SRC:.c=.obj)
+IDM_SVC_SRC = $(IDM_SVC_OBJ:out\=source\)
+IDM_SVC_OBJECTS = $(IDM_SVC_SRC:.c=.obj)
+
+all: clean idmsync.dll idmsync.exe
+
+idmsync.dll: $(IDM_DLL_OBJECTS)
+    $(RC)  /l 0x0409 /nologo /fo out\sync.res source\sync.rc
+    $(LINK) $(LDFLAGS) /EXPORT:InitializeChangeNotify /EXPORT:PasswordChangeNotify /EXPORT:PasswordFilter \
+        /PDB:"out\idmsyncdll.pdb" /DLL /OUT:"out\idmsync.dll" $(IDM_DLL_OBJ) out\sync.res $(DEP_LIBS)
+
+idmsync.exe: $(IDM_SVC_OBJECTS)
+    $(RC)  /l 0x0409 /nologo /fo out\service.res source\service.rc
+    $(LINK) $(LDFLAGS) /SUBSYSTEM:CONSOLE /PDB:"out\idmsync.pdb" /OUT:"out\idmsync.exe" $(IDM_SVC_OBJ) out\service.res $(DEP_LIBS)
+
+clean:
+      -@ if NOT EXIST "out" mkdir "out"
+      del /F /Q out\*.*

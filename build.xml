@@ -1,0 +1,91 @@
+<!--
+ DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+
+ Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+
+ The contents of this file are subject to the terms
+ of the Common Development and Distribution License
+ (the License). You may not use this file except in
+ compliance with the License.
+ 
+ You can obtain a copy of the License at
+ http://forgerock.org/license/CDDLv1.0.html
+ See the License for the specific language governing
+ permission and limitations under the License.
+ 
+ When distributing Covered Code, include this CDDL
+ Header Notice in each file and include the License file
+ at http://forgerock.org/license/CDDLv1.0.html
+ If applicable, add the following below the CDDL Header,
+ with the fields enclosed by brackets [] replaced by
+ your own identifying information:
+ "Portions Copyrighted [2012] [Forgerock Inc]"
+-->
+ 
+<project default="usage">
+    <description>OpenIDM AD Password Sync Module and Service for Windows</description>
+    
+    <target name="all" depends="clean,build32,build64">
+        <echo message="Dispatch to build distribution package"/>
+        <exec executable="C:/Program Files (x86)/Inno Setup 5/Compil32.exe" failonerror="true">
+            <arg value="/cc" />
+            <arg value="idmsync.iss" />
+        </exec>
+    </target>
+        
+    <target name="build32">
+        <echo message="Dispatch to compile of module C code (32bit)" />
+        <mkdir dir="out/32" />
+        <exec executable="make32.bat" failonerror="true"/>
+        <copy file="out/idmsync.dll" tofile="out/32/idmsync.dll" />
+        <copy file="out/idmsync.pdb" tofile="out/32/idmsync.pdb" />
+        <copy file="out/idmsyncdll.pdb" tofile="out/32/idmsyncdll.pdb" />
+        <copy file="out/idmsync.exe" tofile="out/32/idmsync.exe" />
+        <delete>
+            <fileset dir="out" includes="*.*"/>
+        </delete>
+    </target>
+
+    <target name="build64">
+        <echo message="Dispatch to compile of module C code (64bit)"/>
+        <mkdir dir="out/64" />
+        <exec executable="make64.bat" failonerror="true"/>
+        <copy file="out/idmsync.dll" tofile="out/64/idmsync.dll" />
+        <copy file="out/idmsync.pdb" tofile="out/64/idmsync.pdb" />
+        <copy file="out/idmsyncdll.pdb" tofile="out/64/idmsyncdll.pdb" />
+        <copy file="out/idmsync.exe" tofile="out/64/idmsync.exe" />
+        <delete>
+            <fileset dir="out" includes="*.*"/>
+        </delete>
+    </target>
+    
+    <target name="check">
+        <condition property="deldir">
+            <available file="out" type="dir"/>
+        </condition>
+    </target>
+ 
+    <target name="clean" depends="check" if="deldir">
+        <echo message="Dispatch to clean" />
+        <delete>
+            <fileset dir="." includes="svn.properties" />
+        </delete>
+        <delete includeemptydirs="true">
+            <fileset dir="out" />
+        </delete>
+    </target>
+    
+    <target name="usage">
+        <echo message=" "/>
+        <echo message=" Following targets are available:"/>
+        <echo message=" "/>
+        <echo message=" all             : builds all modules (32 and 64 bit)"/>
+        <echo message=" clean           : deletes all the generated files"/>
+        <echo message=" "/>
+        <echo message=" To run a target, issue the following command:"/>
+        <echo message=" "/>
+        <echo message=" ant &lt;target-name&gt;"/>
+        <echo message=" "/>
+    </target>
+    
+</project>
