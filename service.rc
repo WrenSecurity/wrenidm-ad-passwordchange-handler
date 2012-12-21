@@ -1,0 +1,52 @@
+/*
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+ *
+ * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ *
+ * The contents of this file are subject to the terms
+ * of the Common Development and Distribution License
+ * (the License). You may not use this file except in
+ * compliance with the License.
+ *
+ * You can obtain a copy of the License at
+ * http://forgerock.org/license/CDDLv1.0.html
+ * See the License for the specific language governing
+ * permission and limitations under the License.
+ *
+ * When distributing Covered Code, include this CDDL
+ * Header Notice in each file and include the License file
+ * at http://forgerock.org/license/CDDLv1.0.html
+ * If applicable, add the following below the CDDL Header,
+ * with the fields enclosed by brackets [] replaced by
+ * your own identifying information:
+ * "Portions Copyrighted [2012] [Forgerock Inc]"
+ **/
+
+#include <windows.h>
+#include "include\version.h"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION VERSION_NUMBER
+PRODUCTVERSION VERSION_NUMBER
+FILEOS VOS__WINDOWS32
+FILETYPE VFT_APP
+BEGIN     
+BLOCK "StringFileInfo"     
+BEGIN        
+BLOCK "00000000"         
+BEGIN             
+VALUE "CompanyName", "ForgeRock AS (http://forgerock.com/)" "\000"             
+VALUE "FileDescription", "OpenIDM Password Sync Service" "\000"             
+VALUE "FileVersion", VERSION "\000"             
+VALUE "LegalCopyright", "CDDL" "\000"             
+VALUE "OriginalFilename", "idmsync.exe" "\000"             
+VALUE "ProductName", "OpenIDM Password Sync Service" "\000"             
+VALUE "ProductVersion", VERSION "\000"             
+VALUE "Comments", "OpenIDM Password Sync is a password synchronizer designed to synchronize Windows passwords with OpenIDM" "\000"         
+END     
+END      
+BLOCK "VarFileInfo"     
+BEGIN         
+VALUE "Translation", 0x0000 0x0000     
+END 
+END
