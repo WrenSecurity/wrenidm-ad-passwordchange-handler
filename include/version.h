@@ -23,4 +23,5 @@
  **/
 
 #define VERSION "2.1.0"
-#define VERSION_NUMBER 2,1,0,0 
+#define VERSION_NUMBER 2,1,0,0
+#define VERSION_SVN L"@SVN_REVISION@"
