@@ -25,6 +25,8 @@
 <project default="usage">
     <description>OpenIDM AD Password Sync Module and Service for Windows</description>
     
+    <property name="appvers" value="2.1.0"/>
+    
     <target name="all" depends="clean,version,build32,build64">
         <echo message="Dispatch to build distribution package"/>
         <exec executable="C:/Program Files (x86)/Inno Setup 5/Compil32.exe" failonerror="true">
@@ -40,7 +42,7 @@
         <copy file="out/idmsync.dll" tofile="out/32/idmsync.dll" />
         <copy file="out/idmsync.pdb" tofile="out/32/idmsync.pdb" />
         <copy file="out/idmsyncdll.pdb" tofile="out/32/idmsyncdll.pdb" />
-        <copy file="./idmsync.exe" tofile="out/32/idmsync.exe" />
+        <copy file="out/idmsync.exe" tofile="out/32/idmsync.exe" />
         <delete>
             <fileset dir="out" includes="*.*"/>
         </delete>
@@ -53,7 +55,7 @@
         <copy file="out/idmsync.dll" tofile="out/64/idmsync.dll" />
         <copy file="out/idmsync.pdb" tofile="out/64/idmsync.pdb" />
         <copy file="out/idmsyncdll.pdb" tofile="out/64/idmsyncdll.pdb" />
-        <copy file="./idmsync.exe" tofile="out/64/idmsync.exe" />
+        <copy file="out/idmsync.exe" tofile="out/64/idmsync.exe" />
         <delete>
             <fileset dir="out" includes="*.*"/>
         </delete>
@@ -64,17 +66,48 @@
     </exec>
     <property prefix="svn" file="svn.properties"/>
     
+    <macrodef name="replacestring">
+        <attribute name="string"/>
+        <attribute name="searchPattern"/>
+        <attribute name="replacementPattern"/>
+        <attribute name="property"/>
+        <sequential>
+            <tokens id="id">
+                <concat>
+                    <string value="@{string}"/>
+                    <filterchain>
+                        <tokenfilter>
+                            <replaceregex pattern="@{searchPattern}" 
+                                          replace="@{replacementPattern}" 
+                                          flags="g"/>
+                        </tokenfilter>
+                    </filterchain>
+                </concat>
+            </tokens>
+            <property name="@{property}" value="${toString:id}"/>
+        </sequential>
+    </macrodef>
+    
+    <replacestring string="${appvers}" searchPattern="\." replacementPattern=","   
+                   property="appversn"/>
+ 
     <target name="version">
-        <copy file="include/version.h" tofile="out/version.h.backup"/>
-        <copy file="include/version.h" tofile="out/version.h" >
+        <copy file="include/version.h.template" tofile="include/version.h" >
             <filterchain>
                 <replacetokens>
+                    <token key="VERSION_S" value="${appvers}"/>
+                    <token key="VERSION_N" value="${appversn},0"/>
                     <token key="SVN_REVISION" value="${svn.Revision}"/>
                 </replacetokens>
             </filterchain>
         </copy>
-        <copy file="out/version.h" tofile="include/version.h"/>
-        <delete file="out/version.h" quiet="true"/>
+        <copy file="idmsync.iss.template" tofile="idmsync.iss" >
+            <filterchain>
+                <replacetokens>
+                    <token key="VERSION_S" value="${appvers}"/>
+                </replacetokens>
+            </filterchain>
+        </copy>
     </target>
     
     <target name="check">
@@ -82,12 +115,17 @@
             <available file="out" type="dir"/>
         </condition>
     </target>
- 
-    <target name="clean" depends="check" if="deldir">
-        <echo message="Dispatch to clean" />
+    
+    <target name="preclean">
         <delete>
+            <fileset dir="." includes="idmsync.iss" />
             <fileset dir="." includes="svn.properties" />
+            <fileset dir="include" includes="version.h" />
         </delete>
+    </target>
+ 
+    <target name="clean" depends="preclean,check" if="deldir">
+        <echo message="Dispatch to clean" />
         <delete includeemptydirs="true">
             <fileset dir="out" />
         </delete>
@@ -98,12 +136,12 @@
         <echo message=" Following targets are available:"/>
         <echo message=" "/>
         <echo message=" all             : builds all modules (32 and 64 bit)"/>
-        <echo message=" clean           : deletes all the generated files"/>
+        <echo message=" clean           : deletes all generated files"/>
         <echo message=" "/>
         <echo message=" To run a target, issue the following command:"/>
         <echo message=" "/>
         <echo message=" ant &lt;target-name&gt;"/>
         <echo message=" "/>
     </target>
-    
+ 
 </project>

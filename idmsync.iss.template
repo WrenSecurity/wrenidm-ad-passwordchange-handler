@@ -23,8 +23,8 @@
 ;
 
 #define IDMAppName "OpenIDM Password Sync"
-#define IDMAppVersion "2.1.0"
-#define IDMAppPublisher "ForgeRock Inc"
+#define IDMAppVersion "@VERSION_S@"
+#define IDMAppPublisher "ForgeRock Inc."
 #define IDMAppURL "http://www.forgerock.com/"
 
 [Setup]
