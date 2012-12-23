@@ -28,6 +28,7 @@
 #include <windows.h>
 
 void CALLBACK file_worker(PTP_CALLBACK_INSTANCE, void *, PTP_WORK);
+
 void CALLBACK file_time_worker(PTP_CALLBACK_INSTANCE, void *, PTP_TIMER);
 
 #endif

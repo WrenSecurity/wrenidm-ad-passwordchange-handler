@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include "network.h"
-#include "config.h"
 #include "log.h"
 #include "version.h"
 
@@ -54,10 +53,12 @@ static BOOL CALLBACK module_init(PINIT_ONCE ionce, void * param, void ** ctx) {
     wchar_t *log_dir = NULL;
     if (!set_log_path(&log_dir)) {
         DEBUG("module_init(): set_log_path failed");
+    } else if (!create_directory(log_dir)) {
+        DEBUG("module_init(): create_directory failed");
     } else {
         log_handle = queue_init(log_buffer);
-        swprintf(log_path, sizeof (log_path), L"%s\\\\%s", log_dir, LOGNAME);
-        swprintf(log_path_idx, sizeof (log_path_idx), L"%s\\\\%s.%%d", log_dir, LOGNAME);
+        swprintf(log_path, sizeof (log_path), L"%s/%s", log_dir, LOGNAME);
+        swprintf(log_path_idx, sizeof (log_path_idx), L"%s/%s.%%d", log_dir, LOGNAME);
         log_level = get_log_level();
         if (!(log_thr = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) log_worker, log_handle, 0, NULL))) {
             DEBUG("module_init(): create logger thread failed, error: %d", GetLastError());
@@ -143,7 +144,7 @@ static VOID CALLBACK password_change_worker(PTP_CALLBACK_INSTANCE inst, void * c
         LOG(LOG_ERROR, L"password_change_worker(): invalid passwordAttr registry key value");
     } else if (!read_registry_key(L"keyAlias", &key_alias) || key_alias[0] == '\0') {
         LOG(LOG_ERROR, L"password_change_worker(): invalid keyAlias registry key value");
-    } else if (!read_registry_key(L"dataPath", &dir) || dir[0] == '\0') {
+    } else if (!read_registry_key(L"dataPath", &dir) || dir[0] == '\0' || !create_directory(dir)) {
         LOG(LOG_ERROR, L"password_change_worker(): invalid dataPath registry key value");
     } else if (!read_registry_key(L"certFile", &cert_file) || cert_file[0] == '\0') {
         LOG(LOG_ERROR, L"password_change_worker(): invalid certFile registry key value");
@@ -156,7 +157,7 @@ static VOID CALLBACK password_change_worker(PTP_CALLBACK_INSTANCE inst, void * c
         if (encrypt(ctx->password, cert_file, cert_pass, &enc, &key)) {
             if ((hash = md5(ctx->username)) != NULL) {
                 /* hash user name - we'll use hash value to sort files */
-                idm_printf(&file, L"%s\\\\%s-%lld.json", dir, hash, timestamp_id());
+                idm_printf(&file, L"%s/%s-%lld.json", dir, hash, timestamp_id());
                 if (file != NULL) {
                     if ((encw = utf8_decode(enc, NULL)) != NULL) {
                         if ((keyw = utf8_decode(key, NULL)) != NULL) {

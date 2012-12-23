@@ -403,7 +403,7 @@ var
 begin
   if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\ForgeRock\OpenIDM\PasswordSync', KeyName, OrigVal)
   then begin
-   if StringChangeEx(OrigVal, '\', '\\', True) > 0 then begin
+   if StringChangeEx(OrigVal, '\', '/', True) > 0 then begin
      RegWriteStringValue(HKEY_LOCAL_MACHINE, 'Software\ForgeRock\OpenIDM\PasswordSync', KeyName, OrigVal);
    end; 
   end;
