@@ -206,16 +206,18 @@ wchar_t * md5(const wchar_t *plain) {
                             finalhash[l] = dig[bHash[i] & 0xf];
                             l++;
                         }
+                        free(plain_enc);
                         CryptDestroyHash(hash);
                         CryptReleaseContext(prov, 0);
                         finalhash[l] = 0;
                         return utf8_decode(finalhash, NULL);
                     }
                 }
+                CryptDestroyHash(hash);
             }
+            CryptReleaseContext(prov, 0);
         }
-        if (hash) CryptDestroyHash(hash);
-        if (prov) CryptReleaseContext(prov, 0);
+        free(plain_enc);
     }
     return NULL;
 }
