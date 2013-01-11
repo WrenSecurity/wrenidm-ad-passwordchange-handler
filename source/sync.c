@@ -182,7 +182,7 @@ static VOID CALLBACK password_change_worker(PTP_CALLBACK_INSTANCE inst, void * c
                                                 break;
                                         }
                                     }
-                                    if (rq && send_post_request(rq, NULL, xml, xml_size) && rq->dwReqCount == 1) {
+                                    if (rq && send_post_request(rq, NULL, xml, xml_size * sizeof (wchar_t)) && rq->dwReqCount == 1) {
                                         REQUEST_CONTEXT_INT *r = rq->lpRequest[0];
                                         if (r != NULL) {
                                             switch (r->dwStatusCode) {

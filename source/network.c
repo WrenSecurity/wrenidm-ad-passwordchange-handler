@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h> 
 #include "network.h"
-#include "utils.h"
+#include "log.h"
 
 typedef enum {
     GET = 0,
@@ -327,5 +327,9 @@ BOOL send_get_request(REQUEST_CONTEXT *context, LPWSTR urlpath) {
 }
 
 BOOL send_post_request(REQUEST_CONTEXT *context, LPWSTR urlpath, LPWSTR post, DWORD len) {
+    if (log_level == LOG_DEBUG) {
+        LOG(LOG_DEBUG, L"send_post_request(): request url:\n%s", (urlpath == NULL ? L"(null)" : urlpath));
+        LOG(LOG_DEBUG, L"send_post_request(): post size: %d, data:\n%s", len, (post == NULL ? L"(null)" : post));
+    }
     return send_sync_request(context, POST, urlpath, post, len);
 }
