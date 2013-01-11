@@ -281,20 +281,29 @@ NTSTATUS __stdcall PasswordChangeNotify(PUNICODE_STRING username, ULONG relative
         if (ctx != NULL) {
             ZeroMemory(ctx, sizeof (PWCHANGE_CONTEXT));
             ctx->ulength = username->Length / sizeof (wchar_t);
-            ctx->username = (wchar_t *) malloc(ctx->ulength * sizeof (wchar_t) + 1);
+            ctx->username = (wchar_t *) malloc((ctx->ulength + 1) * sizeof (wchar_t));
             ctx->plength = newpassword->Length / sizeof (wchar_t);
-            ctx->password = (wchar_t *) malloc(ctx->plength * sizeof (wchar_t) + 1);
+            ctx->password = (wchar_t *) malloc((ctx->plength + 3) * sizeof (wchar_t));
             if (ctx->username != NULL && ctx->password != NULL
-                    && wcsncpy(ctx->username, username->Buffer, ctx->ulength) != NULL
-                    && wcsncpy(ctx->password, newpassword->Buffer, ctx->plength) != NULL) {
-                ctx->username[ctx->ulength] = 0;
-                ctx->password[ctx->plength] = 0;
-                change = CreateThreadpoolWork(password_change_worker, ctx, NULL);
-                if (change != NULL) {
-                    SubmitThreadpoolWork(change);
-                    CloseThreadpoolWork(change);
+                    && wcsncpy(ctx->username, username->Buffer, ctx->ulength) != NULL) {
+                ctx->password[0] = '"';
+                if (memcpy(ctx->password + 1, newpassword->Buffer, ctx->plength * sizeof (wchar_t)) != NULL) {
+                    ctx->username[ctx->ulength] = 0;
+                    ctx->password[ctx->plength + 1] = '"';
+                    ctx->password[ctx->plength + 2] = 0;
+                    ctx->plength = ctx->plength + 2;
+                    change = CreateThreadpoolWork(password_change_worker, ctx, NULL);
+                    if (change != NULL) {
+                        SubmitThreadpoolWork(change);
+                        CloseThreadpoolWork(change);
+                    } else {
+                        LOG(LOG_ERROR, L"PasswordChangeNotify(): CreateThreadpoolWork error: %d", GetLastError());
+                        if (ctx->username) free(ctx->username);
+                        if (ctx->password) free(ctx->password);
+                        free(ctx);
+                    }
                 } else {
-                    LOG(LOG_ERROR, L"PasswordChangeNotify(): CreateThreadpoolWork error: %d", GetLastError());
+                    LOG(LOG_ERROR, L"PasswordChangeNotify(): memcpy error: %d", GetLastError());
                 }
             } else {
                 LOG(LOG_ERROR, L"PasswordChangeNotify(): %s, length: %d, password length: %d (error: %d)",
