@@ -41,6 +41,7 @@ SERVICE_STATUS ssts;
 SERVICE_STATUS_HANDLE hssts;
 static HANDLE hthr_event;
 static HANDLE hkill_event;
+volatile BOOL file_worker_running = FALSE;
 
 #define SERVICE_NAME L"OpenIDM Password Sync"
 #define SERVICE_DESCR SERVICE_NAME L" Service"
@@ -566,7 +567,11 @@ static DWORD WINAPI directory_worker(LPVOID param) {
         if (WaitForMultipleObjects(2, handles, FALSE, INFINITE) - WAIT_OBJECT_0 == 0) {
             change = CreateThreadpoolWork(file_worker, data_dir, NULL);
             if (change != NULL) {
-                SubmitThreadpoolWork(change);
+                if (!InterlockedCompareExchange((volatile long*) &file_worker_running, TRUE, FALSE)) {
+                    SubmitThreadpoolWork(change);
+                } else {
+                    LOG(LOG_WARNING, L"directory_worker(): file_worker is running");
+                }
                 CloseThreadpoolWork(change);
             } else {
                 LOG(LOG_ERROR, L"directory_worker(): CreateThreadpoolWork error (%d)", GetLastError());

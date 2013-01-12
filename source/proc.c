@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include "network.h"
 #include "log.h"
+#include "proc.h"
 
 #define MAXRETRIES  5
 #define RETRYDELAY  250
@@ -138,6 +139,7 @@ void CALLBACK file_worker(PTP_CALLBACK_INSTANCE inst, void * ctx, PTP_WORK work)
             if (idm_url_fixed) free(idm_url_fixed);
             free(auth_token0);
             free(auth_token1);
+            InterlockedExchange((volatile long*) &file_worker_running, FALSE);
             return;
         }
         LOG(LOG_DEBUG, L"file_worker(): idmURL set to \"%s\"", idm_url);
@@ -184,6 +186,7 @@ void CALLBACK file_worker(PTP_CALLBACK_INSTANCE inst, void * ctx, PTP_WORK work)
                                         break;
                                 }
                             }
+                            data[data_size - usize] = 0;
                             if (rq && send_post_request(rq, NULL, data, (data_size - usize) * sizeof (wchar_t))
                                     && rq->dwReqCount == 1) {
                                 REQUEST_CONTEXT_INT *r = rq->lpRequest[0];
@@ -235,8 +238,13 @@ void CALLBACK file_worker(PTP_CALLBACK_INSTANCE inst, void * ctx, PTP_WORK work)
     } else {
         LOG(LOG_ERROR, L"file_worker(): invalid dataPath value");
     }
+    InterlockedExchange((volatile long*) &file_worker_running, FALSE);
 }
 
 void CALLBACK file_time_worker(PTP_CALLBACK_INSTANCE inst, void * ctx, PTP_TIMER timer) {
-    file_worker(NULL, ctx, NULL);
+    if (!InterlockedCompareExchange((volatile long*) &file_worker_running, TRUE, FALSE)) {
+        file_worker(NULL, ctx, NULL);
+    } else {
+        LOG(LOG_WARNING, L"directory_time_worker(): file_time_worker is running");
+    }
 }

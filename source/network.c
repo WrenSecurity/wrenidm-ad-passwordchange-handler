@@ -204,13 +204,18 @@ void set_idmheader_auth(REQUEST_CONTEXT *context, LPWSTR username, LPWSTR userpa
 static BOOL read_sync_response(REQUEST_CONTEXT_INT *ctx) {
     LPSTR lpBuffer = NULL;
     LPVOID statusCode = NULL;
-    DWORD readCount = 0;
+    DWORD contLen = 0, readCount = 0;
     BOOL readStatus;
     if (WinHttpReceiveResponse(ctx->hRequest, NULL) == TRUE) {
         if ((statusCode = query_header(ctx, WINHTTP_QUERY_STATUS_CODE)) != NULL) {
             ctx->dwStatusCode = wcstol(statusCode, NULL, 10);
             free(statusCode);
         }
+        if ((statusCode = query_header(ctx, WINHTTP_QUERY_CONTENT_LENGTH)) != NULL) {
+            contLen = wcstol(statusCode, NULL, 10);
+            free(statusCode);
+        }
+        LOG(LOG_DEBUG, L"read_sync_response(): status code: %d, content length: %d", ctx->dwStatusCode, contLen);
         while (WinHttpQueryDataAvailable(ctx->hRequest, &ctx->dwSize)) {
             if (ctx->dwSize) {
                 lpBuffer = malloc(ctx->dwSize + 1);
@@ -234,7 +239,12 @@ static BOOL read_sync_response(REQUEST_CONTEXT_INT *ctx) {
         if (ctx->lpBuffer != NULL) {
             ctx->lpBuffer[ctx->dwTotalSize] = 0;
             return TRUE;
-        } else ctx->dwTotalSize = 0;
+        } else {
+            ctx->dwTotalSize = 0;
+            if (contLen == 0) {
+                return TRUE;
+            }
+        }
     }
     return FALSE;
 }
@@ -328,7 +338,8 @@ BOOL send_get_request(REQUEST_CONTEXT *context, LPWSTR urlpath) {
 
 BOOL send_post_request(REQUEST_CONTEXT *context, LPWSTR urlpath, LPWSTR post, DWORD len) {
     if (log_level == LOG_DEBUG) {
-        LOG(LOG_DEBUG, L"send_post_request(): request url:\n%s", (urlpath == NULL ? L"(null)" : urlpath));
+        LOG(LOG_DEBUG, L"send_post_request(): request uri:\n%s",
+                (context == NULL || context->lpUrlPath == NULL ? L"(null)" : context->lpUrlPath));
         LOG(LOG_DEBUG, L"send_post_request(): post size: %d, data:\n%s", len, (post == NULL ? L"(null)" : post));
     }
     return send_sync_request(context, POST, urlpath, post, len);

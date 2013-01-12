@@ -376,7 +376,7 @@ static int count_files(const wchar_t * filespec) {
 }
 
 static int compare_files(const void * a, const void * b) {
-    return wcscoll((wchar_t *) a, (wchar_t *) b);
+    return wcscoll((wchar_t *) b, (wchar_t *) a);
 }
 
 wchar_t ** traverse_directory(const wchar_t * dir, int *count) {
