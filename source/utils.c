@@ -401,8 +401,8 @@ wchar_t ** traverse_directory(const wchar_t * dir, int *count) {
                     _findclose(h);
                     if (i > 0) qsort(list, i, sizeof (list[0]), compare_files);
                 }
-                free(filespec);
             }
+            free(filespec);
         }
     }
     return list;
