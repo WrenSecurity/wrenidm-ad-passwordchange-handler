@@ -262,6 +262,8 @@ static BOOL send_sync_request(REQUEST_CONTEXT *context, REQUEST_TYPE type, LPWST
                 (urlpath == NULL ? context->lpUrlPath : urlpath),
                 NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, context->dwReqFlag);
         if (ctxi->hRequest != NULL) {
+            WinHttpAddRequestHeaders(ctxi->hRequest, L"X-Requested-With: ADPlugin", (DWORD) - 1,
+                    WINHTTP_ADDREQ_FLAG_ADD | WINHTTP_ADDREQ_FLAG_REPLACE);
             switch (context->tokenType) {
                 case BASIC_AUTH:
                     WinHttpSetCredentials(ctxi->hRequest, WINHTTP_AUTH_TARGET_SERVER, WINHTTP_AUTH_SCHEME_BASIC,
