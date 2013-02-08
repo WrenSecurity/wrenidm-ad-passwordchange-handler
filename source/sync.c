@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2013 ForgeRock Inc. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -102,10 +102,12 @@ static VOID CALLBACK password_change_worker(PTP_CALLBACK_INSTANCE inst, void * c
     wchar_t *pwd_attr_id = NULL, *key_alias = NULL, *dir = NULL,
             *cert_file = NULL, *cert_pass = NULL, *hash = NULL,
             *user_b64 = NULL, *file = NULL, *xml = NULL, *idm_url = NULL, *idm_url_fixed = NULL,
-            *encw = NULL, *keyw = NULL, *auth_type = NULL, *auth_token0 = NULL, *auth_token1 = NULL;
+            *encw = NULL, *keyw = NULL, *auth_type = NULL, *auth_token0 = NULL, *auth_token1 = NULL,
+            *key_alg = NULL;
     char *enc = NULL, *key = NULL;
     int xml_size = 0;
     AUTH_TYPE auth = NO_AUTH;
+    ENCR_KEY_ALG alg = AES128;
 
     /* get network connection auth configuration */
     if (read_registry_key(L"authType", &auth_type)) {
@@ -153,8 +155,24 @@ static VOID CALLBACK password_change_worker(PTP_CALLBACK_INSTANCE inst, void * c
         if (!read_registry_key(L"certPassword", &cert_pass)) {
             cert_pass = _wcsdup(L"");
         }
+
+        /* encryption key type/size */
+        if (read_registry_key(L"keyType", &key_alg) && key_alg[0] != '\0') {
+            if (_wcsnicmp(key_alg, L"aes256", 6) == 0) {
+                alg = AES256;
+            } else if (_wcsnicmp(key_alg, L"aes192", 6) == 0) {
+                alg = AES192;
+            } else if (_wcsnicmp(key_alg, L"aes128", 6) == 0) {
+                alg = AES128;
+            } else {
+                LOG(LOG_WARNING, L"password_change_worker(): invalid keyType registry key value [%s], defaulting to AES128", key_alg);
+            }
+        } else {
+            LOG(LOG_WARNING, L"password_change_worker(): empty keyType registry key value, defaulting to AES128");
+        }
+
         /* encrypt password and key */
-        if (encrypt(ctx->password, cert_file, cert_pass, &enc, &key)) {
+        if (encrypt(ctx->password, cert_file, cert_pass, &enc, &key, alg)) {
             if ((hash = md5(ctx->username)) != NULL) {
                 /* hash user name - we'll use hash value to sort files */
                 idm_printf(&file, L"%s/%s-%lld.json", dir, hash, timestamp_id());
@@ -251,6 +269,7 @@ static VOID CALLBACK password_change_worker(PTP_CALLBACK_INSTANCE inst, void * c
     } else {
         LOG(LOG_ERROR, L"password_change_worker(): context is null");
     }
+    if (key_alg) free(key_alg);
     if (idm_url_fixed) free(idm_url_fixed);
     if (idm_url) free(idm_url);
     if (pwd_attr_id) free(pwd_attr_id);

@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2013 ForgeRock Inc. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -298,7 +298,7 @@ static BOOL encrypt_key(HCRYPTPROV hCryptProv, BYTE * cdata, DWORD cdatasize,
 }
 
 BOOL encrypt(const wchar_t *password, const wchar_t * certf, const wchar_t * certp,
-        char ** encrypted, char ** key) {
+        char ** encrypted, char ** key, ENCR_KEY_ALG alg) {
     BOOL ret = FALSE;
     HCRYPTPROV hProv;
     HCRYPTKEY hKey = 0;
@@ -306,6 +306,7 @@ BOOL encrypt(const wchar_t *password, const wchar_t * certf, const wchar_t * cer
     DWORD dwBlobLen, dwBlobLenTemp, sizeDest, sizeSource, tmpLen = 0;
     DWORD dwMode = CRYPT_MODE_ECB;
     DWORD dwPadding = PKCS5_PADDING;
+    ALG_ID algid = CALG_AES_128;
 
     if (password == NULL || certf == NULL || certp == NULL) {
         LOG(LOG_ERROR, L"%s: invalid parameters");
@@ -315,8 +316,20 @@ BOOL encrypt(const wchar_t *password, const wchar_t * certf, const wchar_t * cer
         sizeDest = sizeSource;
     }
 
+    switch (alg) {
+        case AES256:
+            algid = CALG_AES_256;
+            break;
+        case AES192:
+            algid = CALG_AES_192;
+            break;
+        case AES128:
+            algid = CALG_AES_128;
+            break;
+    }
+
     if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT)) {
-        if (CryptGenKey(hProv, CALG_AES_256, CRYPT_EXPORTABLE, &hKey)) {
+        if (CryptGenKey(hProv, algid, CRYPT_EXPORTABLE, &hKey)) {
             if (CryptSetKeyParam(hKey, KP_PADDING, (PBYTE) & dwPadding, 0)
                     && CryptSetKeyParam(hKey, KP_MODE, (PBYTE) & dwMode, 0)) {
                 if (CryptExportKey(hKey, 0, PLAINTEXTKEYBLOB, 0, NULL, &dwBlobLenTemp)) {

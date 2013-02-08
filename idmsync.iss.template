@@ -1,7 +1,7 @@
 ;
 ; DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 ;
-; Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+; Copyright (c) 2013 ForgeRock Inc. All rights reserved.
 ;
 ; The contents of this file are subject to the terms
 ; of the Common Development and Distribution License
@@ -85,6 +85,7 @@ Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string
 Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "certFile"; ValueData: "{code:GetOption|certFile}"
 Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "certPassword"; ValueData: "{code:GetOption|certPassword}"
 Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "keyAlias"; ValueData: "{code:GetOption|keyAlias}"
+Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "keyType"; ValueData: "{code:GetOption|keyType}"
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Lsa"; ValueType: multisz; ValueName: "Notification Packages"; ValueData: "{olddata}{break}idmsync"; Check: NeedsAddDll('idmsync')
 
 [Dirs]
@@ -111,6 +112,8 @@ var
   CertFilePageA: TInputFileWizardPage;
   CertPassLabelA: TNewStaticText;
   CertPassA: TPasswordEdit;
+  KeyTypeLabel: TNewStaticText;
+  KeyType: TComboBox;
   value: String;
   value0: String;
   value1: String;
@@ -180,6 +183,20 @@ begin
   CertPassE.Top := 130;
   CertPassE.Width := CertFilePage.SurfaceWidth;
   CertPassE.Parent := CertFilePage.Surface;
+  KeyTypeLabel := TNewStaticText.Create(CertFilePage);
+  KeyTypeLabel.Top := 160;
+  KeyTypeLabel.Caption := 'Select encryption key type/size:';
+  KeyTypeLabel.AutoSize := True;
+  KeyTypeLabel.Parent := CertFilePage.Surface;
+  KeyType := TComboBox.Create(CertFilePage);
+  KeyType.Top := 175; 
+  KeyType.Width := CertFilePage.SurfaceWidth;
+  KeyType.Parent := CertFilePage.Surface;
+  KeyType.Style := csDropDownList;
+  KeyType.Items.Add('aes128');
+  KeyType.Items.Add('aes192');
+  KeyType.Items.Add('aes256');
+  KeyType.ItemIndex := 0;
     
   DataDirPage := CreateInputDirPage(CertFilePage.ID,
     'Data Storage', 'Where should Service output data files be stored?',
@@ -301,6 +318,17 @@ begin
       LogType.ItemIndex := 0;
   end
   value := '';
+  RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'keyType', value);
+  if (value = 'aes128') then begin
+      KeyType.ItemIndex := 0;
+  end else if (value = 'aes192') then begin
+      KeyType.ItemIndex := 1;
+  end else if (value = 'aes256') then begin
+      KeyType.ItemIndex := 2;
+  end else begin
+      KeyType.ItemIndex := 0;
+  end
+  value := '';
 
 end;
 
@@ -356,6 +384,16 @@ begin
     Result := CertPassE.Text
   else if Param = 'keyAlias' then
     Result := CertAlias.Text
+  else if Param = 'keyType' then
+   if (KeyType.ItemIndex = 0) then begin
+      Result := 'aes128'
+   end else if (KeyType.ItemIndex = 1) then begin
+      Result := 'aes192'
+   end else if (KeyType.ItemIndex = 2) then begin
+      Result := 'aes256'
+   end else begin
+      Result := 'aes128'
+   end
 end;
 
 function GetXmlDir(Param: String): String;

@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2013 ForgeRock Inc. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -53,6 +53,12 @@
 
 #define IDM_REG_SUBKEY L"SOFTWARE\\ForgeRock\\OpenIDM\\PasswordSync"
 
+typedef enum {
+    AES128,
+    AES192,
+    AES256
+} ENCR_KEY_ALG;
+
 void DEBUG_INT(const wchar_t *fmt, ...);
 #define DEBUG(fmt, ...) DEBUG_INT(TEXT(fmt), __VA_ARGS__)
 void show_windows_error(DWORD err);
@@ -77,7 +83,8 @@ wchar_t * base64encode(const wchar_t *input, size_t length, size_t *outlen);
 
 wchar_t * md5(const wchar_t *plain);
 
-BOOL encrypt(const wchar_t *password, const wchar_t * certf, const wchar_t * certp, char ** encrypted, char ** key);
+BOOL encrypt(const wchar_t *password, const wchar_t * certf, const wchar_t * certp,
+        char ** encrypted, char ** key, ENCR_KEY_ALG alg);
 
 BOOL generate_key(char **b64key, size_t *size);
 
