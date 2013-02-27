@@ -26,6 +26,7 @@
 #include <process.h>
 #include <io.h>
 #include <sys/types.h>
+#include <stdint.h>
 #include "log.h"
 
 #define MAX_FSIZE 5120000 //5Mb
@@ -50,11 +51,9 @@ void stop_logger(const wchar_t *msg, LOG_QUEUE *q) {
 static void rotate_log(HANDLE file) {
     BY_HANDLE_FILE_INFORMATION info;
     wchar_t tmp[MAX_PATH];
-    off_t fsize = 0;
+    uint64_t fsize = 0;
     if (GetFileInformationByHandle(file, &info)) {
-        fsize = info.nFileSizeHigh;
-        fsize <<= 32;
-        fsize += info.nFileSizeLow;
+        fsize = ((DWORDLONG) (((DWORD) (info.nFileSizeLow)) | (((DWORDLONG) ((DWORD) (info.nFileSizeHigh))) << 32)));
     }
     if (fsize > MAX_FSIZE) {
         unsigned int idx = 1;
