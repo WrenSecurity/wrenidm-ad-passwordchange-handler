@@ -74,7 +74,7 @@ void http_close(REQUEST_CONTEXT *context) {
             context->pCertContext = NULL;
         }
         if (context->pfxStore != NULL) {
-            CertCloseStore(context->pfxStore, CERT_CLOSE_STORE_FORCE_FLAG);
+            CertCloseStore(context->pfxStore, 0);
             context->pfxStore = NULL;
         }
         free(context);

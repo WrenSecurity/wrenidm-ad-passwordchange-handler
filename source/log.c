@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2012-2013 ForgeRock Inc. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -138,6 +138,16 @@ void queue_delete(LOG_QUEUE *q) {
     }
 }
 
+int fileExists(wchar_t * file) {
+    WIN32_FIND_DATA FindFileData;
+    HANDLE handle = FindFirstFile(file, &FindFileData);
+    int found = handle != INVALID_HANDLE_VALUE;
+    if (found) {
+        FindClose(&handle);
+    }
+    return found;
+}
+
 DWORD WINAPI log_worker(void * p) {
     HANDLE file = INVALID_HANDLE_VALUE, mtx = NULL;
     LOG_QUEUE *log = (LOG_QUEUE *) p;
@@ -152,9 +162,23 @@ DWORD WINAPI log_worker(void * p) {
             for (;;) {
                 LOG_MESSAGE *qlms = (LOG_MESSAGE *) queue_dequeue(log);
                 if (file == INVALID_HANDLE_VALUE) {
-                    file = CreateFile(log_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                            NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+                    if (fileExists(log_path)) {
+                        file = CreateFile(log_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                                NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+                    } else {
+                        file = CreateFile(log_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                                NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+                        if (file != INVALID_HANDLE_VALUE) {
+                            DWORD wr;
+                            unsigned char Header[2];
+                            Header[0] = 0xFF;
+                            Header[1] = 0xFE;
+                            WriteFile(file, Header, 2, &wr, NULL);
+                            FlushFileBuffers(file);
+                        }
+                    }
                 }
+
                 /*rotate log file*/
                 if (WaitForSingleObject(mtx, INFINITE) == WAIT_OBJECT_0) {
                     rotate_log(file);
