@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2012-2013 ForgeRock Inc. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -27,6 +27,7 @@
 #include <stdio.h> 
 #include "network.h"
 #include "log.h"
+#include "version.h"
 
 typedef enum {
     GET = 0,
@@ -106,8 +107,7 @@ REQUEST_CONTEXT * http_connect(LPWSTR url, int timeout_msec) {
         ZeroMemory(ctx, sizeof (REQUEST_CONTEXT));
         ctx->dwTid = GetCurrentThreadId();
         ctx->tokenType = NO_AUTH;
-        if (ctx->hSession = WinHttpOpen(L"OpenIDM AD Sync/2.1",
-                WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+        if (ctx->hSession = WinHttpOpen(USERAGENT, WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
                 WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, WINHTTP_FLAG_ASYNC)) {
             if (!WinHttpSetTimeouts(ctx->hSession, timeout_msec, timeout_msec, timeout_msec, timeout_msec)) {
                 ctx->dwErrorFlag = IDM_SET_TIMEOUT_ERROR;
@@ -123,13 +123,15 @@ REQUEST_CONTEXT * http_connect(LPWSTR url, int timeout_msec) {
             if (WinHttpCrackUrl(url, 0, 0, &urlComp)) {
                 if ((ctx->hConnect = WinHttpConnect(ctx->hSession, szHost, urlComp.nPort, 0))) {
                     ctx->lpUrlPath = (LPWSTR) malloc((urlComp.dwUrlPathLength + urlComp.dwExtraInfoLength + 1) * sizeof (WCHAR));
-                    memcpy(ctx->lpUrlPath, urlComp.lpszUrlPath, (urlComp.dwUrlPathLength + urlComp.dwExtraInfoLength) * sizeof (WCHAR));
-                    ctx->lpUrlPath[urlComp.dwUrlPathLength + urlComp.dwExtraInfoLength] = 0;
-                    ctx->dwReqFlag = (INTERNET_SCHEME_HTTPS == urlComp.nScheme) ? WINHTTP_FLAG_SECURE : 0;
-                    ctx->dwSecFlag = (INTERNET_SCHEME_HTTPS == urlComp.nScheme) ?
-                            SECURITY_FLAG_IGNORE_CERT_CN_INVALID | SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
-                            | SECURITY_FLAG_IGNORE_UNKNOWN_CA | SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE : 0;
-                    return ctx;
+                    if (ctx->lpUrlPath != NULL) {
+                        memcpy(ctx->lpUrlPath, urlComp.lpszUrlPath, (urlComp.dwUrlPathLength + urlComp.dwExtraInfoLength) * sizeof (WCHAR));
+                        ctx->lpUrlPath[urlComp.dwUrlPathLength + urlComp.dwExtraInfoLength] = 0;
+                        ctx->dwReqFlag = (INTERNET_SCHEME_HTTPS == urlComp.nScheme) ? WINHTTP_FLAG_SECURE : 0;
+                        ctx->dwSecFlag = (INTERNET_SCHEME_HTTPS == urlComp.nScheme) ?
+                                SECURITY_FLAG_IGNORE_CERT_CN_INVALID | SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
+                                | SECURITY_FLAG_IGNORE_UNKNOWN_CA | SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE : 0;
+                        return ctx;
+                    }
                 }
             }
         }
@@ -142,11 +144,13 @@ void set_cert_auth(REQUEST_CONTEXT *context, LPWSTR pkcs12filepath, LPWSTR pkcs1
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hSection = 0;
     LPVOID pFileView = 0;
+    WCHAR ccName[256];
     CRYPT_DATA_BLOB blob;
     if (context != NULL && context->pCertContext == NULL && context->pfxStore == NULL) {
         context->tokenType = NO_AUTH;
         context->idToken0 = pkcs12filepath;
         context->idToken1 = pkcs12passwd;
+        LOG(LOG_DEBUG, L"set_cert_auth(): using PKCS12 file %s", context->idToken0 != NULL ? context->idToken0 : L"");
         if (context->idToken0 != NULL && (hFile = CreateFile(context->idToken0, FILE_READ_DATA, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) != INVALID_HANDLE_VALUE) {
             if ((hSection = CreateFileMapping(hFile, 0, PAGE_READONLY, 0, 0, 0))) {
                 if ((pFileView = MapViewOfFile(hSection, FILE_MAP_READ, 0, 0, 0))) {
@@ -156,16 +160,20 @@ void set_cert_auth(REQUEST_CONTEXT *context, LPWSTR pkcs12filepath, LPWSTR pkcs1
                             && (context->pfxStore = PFXImportCertStore(&blob, context->idToken1 != NULL ? context->idToken1 : L"",
                             CRYPT_MACHINE_KEYSET | CRYPT_EXPORTABLE))) {
                         if ((context->pCertContext = CertEnumCertificatesInStore(context->pfxStore, context->pCertContext))) {
-                            context->tokenType = CERT_AUTH;
+                            if (CertGetNameString(context->pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, NULL, ccName, 128)) {
+                                LOG(LOG_DEBUG,
+                                        L"set_cert_auth(): found key/certificate: \"%s\"", ccName);
+                                context->tokenType = CERT_AUTH;
+                            }
                         } else {
                             context->dwErrorFlag = IDM_CERT_ENUM_ERROR;
                             context->dwErrorCode = GetLastError();
-                            CertCloseStore(context->pfxStore, CERT_CLOSE_STORE_FORCE_FLAG);
-                            context->pfxStore = NULL;
+                            LOG(LOG_ERROR, L"set_cert_auth(): failed to enumerate certificates in PKCS12 file %s (%d)", context->idToken0, context->dwErrorCode);
                         }
                     } else {
                         context->dwErrorFlag = IDM_PFX_OPEN_ERROR;
                         context->dwErrorCode = GetLastError();
+                        LOG(LOG_ERROR, L"set_cert_auth(): failed to import PKCS12 file %s (%d)", context->idToken0, context->dwErrorCode);
                     }
                     UnmapViewOfFile(pFileView);
                 } else {
@@ -181,6 +189,7 @@ void set_cert_auth(REQUEST_CONTEXT *context, LPWSTR pkcs12filepath, LPWSTR pkcs1
         } else {
             context->dwErrorFlag = IDM_FILE_OPEN_ERROR;
             context->dwErrorCode = GetLastError();
+            LOG(LOG_ERROR, L"set_cert_auth(): failed to open PKCS12 file %s (%d)", context->idToken0 != NULL ? context->idToken0 : L"", context->dwErrorCode);
         }
     }
 }
