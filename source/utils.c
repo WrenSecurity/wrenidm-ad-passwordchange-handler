@@ -40,10 +40,10 @@ char *utf8_encode(const wchar_t *wstr, size_t *outlen) {
     size_t out_len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
     if (outlen) *outlen = 0;
     if (out_len > 0) {
-        tmp = (char *) malloc(out_len + 1);
+        tmp = (char *) malloc(out_len);
         WideCharToMultiByte(CP_UTF8, 0, wstr, -1, tmp, (DWORD) out_len, NULL, NULL);
-        tmp[out_len] = 0;
-        if (outlen) *outlen = out_len;
+        tmp[out_len - 1] = 0;
+        if (outlen) *outlen = out_len - 1;
         return tmp;
     }
     return NULL;
@@ -54,10 +54,10 @@ wchar_t *utf8_decode(const char *str, size_t *outlen) {
     size_t out_len = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
     if (outlen) *outlen = 0;
     if (out_len > 0) {
-        tmp = (wchar_t *) malloc(sizeof (wchar_t) * (out_len + 1));
+        tmp = (wchar_t *) malloc(sizeof (wchar_t) * out_len);
         MultiByteToWideChar(CP_UTF8, 0, str, -1, tmp, (DWORD) out_len);
-        tmp[out_len] = 0;
-        if (outlen) *outlen = out_len;
+        tmp[out_len - 1] = 0;
+        if (outlen) *outlen = out_len - 1;
         return tmp;
     }
     return NULL;
@@ -70,7 +70,7 @@ wchar_t * base64decode(const wchar_t *input, size_t length, size_t *outlen) {
     if (outlen) *outlen = 0;
     if (input == NULL) return NULL;
     if (CryptStringToBinary(input, (DWORD) length, CRYPT_STRING_BASE64, NULL, &ulBlobSz, &ulSkipped, &ulFmt) == TRUE) {
-        if ((tmp = malloc(ulBlobSz * sizeof (wchar_t) + 1)) != NULL) {
+        if ((tmp = malloc((ulBlobSz + 1) * sizeof (wchar_t))) != NULL) {
             if (CryptStringToBinary(input, (DWORD) length, CRYPT_STRING_BASE64, tmp, &ulBlobSz, &ulSkipped, &ulFmt) == TRUE) {
                 tmp[ulBlobSz] = 0;
                 out = utf8_decode(tmp, outlen);
@@ -89,7 +89,7 @@ wchar_t * base64encode(const wchar_t *input, size_t length, size_t *outlen) {
     if (input == NULL) return NULL;
     else if ((tmp = utf8_encode(input, NULL)) == NULL) return NULL;
     if (CryptBinaryToString((const BYTE *) tmp, (DWORD) length, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &ulEncLen) == TRUE) {
-        if ((buf = (wchar_t *) malloc(ulEncLen * sizeof (wchar_t) + 1)) != NULL) {
+        if ((buf = (wchar_t *) malloc((ulEncLen + 1) * sizeof (wchar_t))) != NULL) {
             if (CryptBinaryToString((const BYTE *) tmp, (DWORD) length, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, buf, &ulEncLen) == TRUE) {
                 buf[ulEncLen] = 0;
                 if (outlen) *outlen = ulEncLen;
@@ -132,10 +132,22 @@ char * base64encodeA(const char *input, size_t length, size_t *outlen) {
     return tmp;
 }
 
-int vaswprintf(wchar_t **buffer, const wchar_t *fmt, va_list argv) {
-    int size = _vsnwprintf(*buffer = NULL, 0, fmt, argv);
-    if ((size > 0) && ((*buffer = malloc(size * sizeof (wchar_t) + 2)) != NULL)) {
-        return _vsnwprintf(*buffer, size + 1, fmt, argv);
+#define va_copy(dst, src) ((void)((dst) = (src)))
+
+int vaswprintf(wchar_t **buffer, const wchar_t *fmt, va_list arg) {
+    int size;
+    va_list ap;
+    *buffer = NULL;
+    va_copy(ap, arg);
+    size = _vsnwprintf(NULL, 0, fmt, ap);
+    va_end(ap);
+    if (size >= 0) {
+        if ((*buffer = malloc(++size * sizeof (wchar_t))) != NULL) {
+            if ((size = _vsnwprintf(*buffer, size, fmt, arg)) < 0) {
+                free(*buffer);
+                *buffer = NULL;
+            }
+        }
     }
     return size;
 }
@@ -189,17 +201,18 @@ wchar_t *timestamp_log() {
 }
 
 wchar_t * md5(const wchar_t *plain) {
-    HCRYPTPROV prov;
-    HCRYPTHASH hash;
+    HCRYPTPROV prov = 0;
+    HCRYPTHASH hash = 0;
     BYTE bHash[0x7f];
     DWORD i, l = 0, dwHashLen = 16, cbContent = 0;
-    char finalhash[32], dig[] = "0123456789ABCDEF";
+    char finalhash[33], dig[] = "0123456789ABCDEF";
     char *plain_enc = NULL;
-    if (plain != NULL && (plain_enc = utf8_encode(plain, NULL)) != NULL) {
+    if (plain != NULL && (plain_enc = utf8_encode(plain, (size_t *) & cbContent)) != NULL) {
         if (CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_MACHINE_KEYSET)) {
             if (CryptCreateHash(prov, CALG_MD5, 0, 0, &hash)) {
                 if (CryptHashData(hash, plain_enc, cbContent, 0)) {
                     if (CryptGetHashParam(hash, HP_HASHVAL, bHash, &dwHashLen, 0)) {
+                        memset(&finalhash[0], 0x00, sizeof (finalhash));
                         for (i = 0; i < 16; i++) {
                             finalhash[l] = dig[bHash[i] >> 4];
                             l++;
@@ -303,16 +316,17 @@ BOOL encrypt(const wchar_t *password, const wchar_t * certf, const wchar_t * cer
     HCRYPTPROV hProv;
     HCRYPTKEY hKey = 0;
     BYTE *pbKeyBlob = NULL, *pbKeyBlobTemp = NULL, *buffTemp = NULL;
-    DWORD dwBlobLen, dwBlobLenTemp, sizeDest, sizeSource, tmpLen = 0;
+    DWORD dwBlobLen, dwBlobLenTemp, sizeDest, sizeSource = 0;
     DWORD dwMode = CRYPT_MODE_ECB;
     DWORD dwPadding = PKCS5_PADDING;
     ALG_ID algid = CALG_AES_128;
+    char *password_utf8 = NULL;
 
     if (password == NULL || certf == NULL || certp == NULL) {
         LOG(LOG_ERROR, L"%s: invalid parameters");
         return FALSE;
     } else {
-        sizeSource = (DWORD) wcslen(password) * sizeof (wchar_t);
+        password_utf8 = utf8_encode(password, (size_t *) & sizeSource);
         sizeDest = sizeSource;
     }
 
@@ -340,7 +354,7 @@ BOOL encrypt(const wchar_t *password, const wchar_t * certf, const wchar_t * cer
                                 CopyMemory(pbKeyBlob, pbKeyBlobTemp + 12, dwBlobLen);
                                 if (CryptEncrypt(hKey, 0, TRUE, 0, NULL, &sizeDest, sizeSource)) {
                                     if ((buffTemp = (BYTE *) calloc(1, sizeDest)) != NULL) {
-                                        CopyMemory(buffTemp, password, sizeSource);
+                                        CopyMemory(buffTemp, password_utf8, sizeSource);
                                         if (CryptEncrypt(hKey, 0, TRUE, 0, buffTemp, &sizeSource, sizeDest)) {
                                             if ((*encrypted = base64encodeA(buffTemp, sizeSource, NULL)) != NULL) {
                                                 ret = encrypt_key(hProv, pbKeyBlob, dwBlobLen, certf, certp, key);
@@ -360,6 +374,7 @@ BOOL encrypt(const wchar_t *password, const wchar_t * certf, const wchar_t * cer
         }
         CryptReleaseContext(hProv, 0);
     }
+    if (password_utf8) free(password_utf8);
     return ret;
 }
 
