@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2013 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2013-2014 ForgeRock AS. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -19,7 +19,7 @@
  * If applicable, add the following below the CDDL Header,
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
- * "Portions Copyrighted [2012] [Forgerock Inc]"
+ * "Portions Copyrighted [2012] [Forgerock AS]"
  **/
 
 #ifndef __UTILS_H__
@@ -30,7 +30,8 @@
 
 #define JSON_PAYLOAD \
         L"[{"\
-        L" \"replace\" : \"/%s\","\
+        L" \"operation\" : \"replace\","\
+        L" \"field\" : \"/%s\","\
         L" \"value\" :"\
         L"  {"\
         L"   \"$crypto\" :"\
