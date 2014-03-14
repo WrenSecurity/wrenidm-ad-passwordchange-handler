@@ -204,6 +204,7 @@ static VOID CALLBACK password_change_worker(PTP_CALLBACK_INSTANCE inst, void * c
                                         REQUEST_CONTEXT_INT *r = rq->lpRequest[0];
                                         if (r != NULL) {
                                             switch (r->dwStatusCode) {
+                                                case 200:
                                                 case 204:
                                                     LOG(LOG_INFO, L"password_change_worker(): change request for user \"%s\" succeeded", ctx->username);
                                                     status = TRUE;

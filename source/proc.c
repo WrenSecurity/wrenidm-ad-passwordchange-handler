@@ -192,6 +192,7 @@ void CALLBACK file_worker(PTP_CALLBACK_INSTANCE inst, void * ctx, PTP_WORK work)
                                 REQUEST_CONTEXT_INT *r = rq->lpRequest[0];
                                 if (r != NULL) {
                                     switch (r->dwStatusCode) {
+                                        case 200:
                                         case 204:
                                             LOG(LOG_INFO, L"file_worker(): change request for user \"%s\" succeeded", user);
                                             status = TRUE;
