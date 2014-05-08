@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2012-2014 ForgeRock AS. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -19,7 +19,7 @@
  * If applicable, add the following below the CDDL Header,
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
- * "Portions Copyrighted [2012] [Forgerock Inc]"
+ * "Portions Copyrighted [2012] [ForgeRock AS]"
  **/
 
 #ifndef __PROC_H__
@@ -29,8 +29,8 @@
 
 volatile BOOL file_worker_running;
 
-void CALLBACK file_worker(PTP_CALLBACK_INSTANCE, void *, PTP_WORK);
+DWORD CALLBACK file_worker(LPVOID);
 
-void CALLBACK file_time_worker(PTP_CALLBACK_INSTANCE, void *, PTP_TIMER);
+VOID CALLBACK file_time_worker(PVOID, BOOLEAN);
 
 #endif

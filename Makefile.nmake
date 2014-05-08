@@ -1,7 +1,7 @@
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
-# Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+# Copyright (c) 2012-2014 ForgeRock AS. All rights reserved.
 #
 # The contents of this file are subject to the terms
 # of the Common Development and Distribution License
@@ -19,7 +19,7 @@
 # If applicable, add the following below the CDDL Header,
 # with the fields enclosed by brackets [] replaced by
 # your own identifying information:
-# "Portions Copyrighted [2012] [Forgerock Inc]"
+# "Portions Copyrighted [2012] [ForgeRock AS]"
 #
 
 CC = cl
@@ -29,7 +29,7 @@ RC = rc
 IDM_DLL_OBJ = out\utils.obj out\log.obj out\network.obj out\sync.obj
 IDM_SVC_OBJ = out\utils.obj out\log.obj out\network.obj out\service.obj out\proc.obj
 
-DEP_LIBS = kernel32.lib user32.lib advapi32.lib winhttp.lib crypt32.lib
+DEP_LIBS = kernel32.lib user32.lib advapi32.lib ws2_32.lib crypt32.lib secur32.lib
 
 LDFLAGS = /NOLOGO /INCREMENTAL:NO /errorReport:none /MANIFEST:NO \
    /OPT:REF /OPT:ICF /LTCG /DYNAMICBASE /NXCOMPAT /DEBUG \
@@ -40,9 +40,8 @@ LDFLAGS = /NOLOGO /INCREMENTAL:NO /errorReport:none /MANIFEST:NO \
 !ENDIF
 
 CFLAGS = /O2 /Oi /GL /Gy /D _CRT_SECURE_NO_WARNINGS \
-   /wd4996 /wd4101 /wd4244 /wd4995 /wd4275 /EHsc /nologo /Zi /errorReport:none \
-   /I".\include" /MT /W3 /c /TC /D WIN32 /D _WIN32_WINNT=0x0600 \
-   /D UNICODE /D _UNICODE 
+   /wd4996 /wd4101 /wd4244 /wd4995 /wd4275 /EHa /nologo /Zi /errorReport:none \
+   /I".\include" /MP /Gm- /MT /W3 /c /TC /D WIN32
 
 .c.obj::
     $(CC) $(CFLAGS) /Fdout\ /Foout\ $<

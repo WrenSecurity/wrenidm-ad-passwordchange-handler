@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012-2013 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2012-2014 ForgeRock AS. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -19,7 +19,7 @@
  * If applicable, add the following below the CDDL Header,
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
- * "Portions Copyrighted [2012] [Forgerock Inc]"
+ * "Portions Copyrighted [2012] [ForgeRock AS]"
  **/
 
 #include <stdio.h>
@@ -28,10 +28,9 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include "log.h"
+#include "utils.h"
 
-#define MAX_FSIZE 5120000 //5Mb
-
-void stop_logger(const wchar_t *msg, LOG_QUEUE *q) {
+void stop_logger(const char *msg, LOG_QUEUE *q) {
     if (q != NULL) {
         LOG_MESSAGE *qm = (LOG_MESSAGE *) malloc(sizeof (LOG_MESSAGE));
         if (qm == NULL) {
@@ -43,26 +42,26 @@ void stop_logger(const wchar_t *msg, LOG_QUEUE *q) {
         qm->tid = GetCurrentThreadId();
         qm->pid = _getpid();
         qm->ts = timestamp_log();
-        qm->msg = _wcsdup(msg == NULL ? L"logger exiting" : msg);
+        qm->msg = strdup(msg == NULL ? "logger exiting" : msg);
         queue_enqueue(q, qm);
     }
 }
 
 static void rotate_log(HANDLE file) {
     BY_HANDLE_FILE_INFORMATION info;
-    wchar_t tmp[MAX_PATH];
+    char tmp[MAX_PATH];
     uint64_t fsize = 0;
     if (GetFileInformationByHandle(file, &info)) {
         fsize = ((DWORDLONG) (((DWORD) (info.nFileSizeLow)) | (((DWORDLONG) ((DWORD) (info.nFileSizeHigh))) << 32)));
     }
-    if (fsize > MAX_FSIZE) {
+    if (fsize > max_log_size()) {
         unsigned int idx = 1;
         do {
             ZeroMemory(&tmp[0], sizeof (tmp));
-            swprintf_s(tmp, sizeof (tmp), log_path_idx, idx);
+            sprintf_s(tmp, sizeof (tmp), log_path_idx, idx);
             idx++;
-        } while (_waccess(tmp, 0) >= 0);
-        if (CopyFile(log_path, tmp, FALSE)) {
+        } while (access(tmp, 0) >= 0);
+        if (CopyFileA(log_path, tmp, FALSE)) {
             SetFilePointer(file, 0, NULL, FILE_BEGIN);
             SetEndOfFile(file);
         } else {
@@ -73,16 +72,16 @@ static void rotate_log(HANDLE file) {
 
 void queue_enqueue(LOG_QUEUE *que, void * value) {
     if (que != NULL) {
-        EnterCriticalSection(&(que->mutex));
+        MUTEX_LOCK(que->mutex);
         while (que->size == que->capacity) {
-            SleepConditionVariableCS(&(que->cond_full), &(que->mutex), INFINITE);
+            CONDVAR_WAIT(que->cond_full, que->mutex, INFINITE);
         }
         que->buffer[que->in] = value;
         ++(que->size);
         ++(que->in);
         que->in %= que->capacity;
-        LeaveCriticalSection(&(que->mutex));
-        WakeConditionVariable(&(que->cond_empty));
+        MUTEX_UNLOCK(que->mutex);
+        CONDVAR_SIGNAL(que->cond_empty);
     }
 }
 
@@ -91,26 +90,16 @@ void *queue_dequeue(LOG_QUEUE *que) {
     if (que != NULL) {
         EnterCriticalSection(&(que->mutex));
         while (que->size == 0) {
-            SleepConditionVariableCS(&(que->cond_empty), &(que->mutex), INFINITE);
+            CONDVAR_WAIT(que->cond_empty, que->mutex, INFINITE);
         }
         value = que->buffer[que->out];
         --(que->size);
         ++(que->out);
         que->out %= que->capacity;
-        LeaveCriticalSection(&(que->mutex));
-        WakeConditionVariable(&(que->cond_full));
+        MUTEX_UNLOCK(que->mutex);
+        CONDVAR_SIGNAL(que->cond_full);
     }
     return value;
-}
-
-int queue_size(LOG_QUEUE *que) {
-    int size = 0;
-    if (que != NULL) {
-        EnterCriticalSection(&(que->mutex));
-        size = que->size;
-        LeaveCriticalSection(&(que->mutex));
-    }
-    return size;
 }
 
 LOG_QUEUE *queue_init(void * buffer) {
@@ -124,23 +113,25 @@ LOG_QUEUE *queue_init(void * buffer) {
     q->size = 0;
     q->in = 0;
     q->out = 0;
-    InitializeCriticalSection(&(q->mutex));
-    InitializeConditionVariable(&(q->cond_empty));
-    InitializeConditionVariable(&(q->cond_full));
+    MUTEX_CREATE(q->mutex);
+    CONDVAR_CREATE(q->cond_empty);
+    CONDVAR_CREATE(q->cond_full);
     return q;
 }
 
 void queue_delete(LOG_QUEUE *q) {
     if (q != NULL) {
-        DeleteCriticalSection(&(q->mutex));
+        CONDVAR_DELETE(q->cond_empty);
+        CONDVAR_DELETE(q->cond_full);
+        MUTEX_DELETE(q->mutex);
         free(q);
         q = NULL;
     }
 }
 
-int fileExists(wchar_t * file) {
+int fileExists(char * file) {
     WIN32_FIND_DATA FindFileData;
-    HANDLE handle = FindFirstFile(file, &FindFileData);
+    HANDLE handle = FindFirstFileA(file, &FindFileData);
     int found = handle != INVALID_HANDLE_VALUE;
     if (found) {
         FindClose(&handle);
@@ -151,31 +142,23 @@ int fileExists(wchar_t * file) {
 DWORD WINAPI log_worker(void * p) {
     HANDLE file = INVALID_HANDLE_VALUE, mtx = NULL;
     LOG_QUEUE *log = (LOG_QUEUE *) p;
-    wchar_t lvls[32], *msg = NULL;
+    char *lvls, *msg = NULL;
     DWORD written, pos, msg_size = 0;
     if (log != NULL) {
-        mtx = CreateMutex(NULL, FALSE, LOGLOCK);
+        mtx = CreateMutexA(NULL, FALSE, LOGLOCK);
         if (mtx == NULL && GetLastError() == ERROR_ACCESS_DENIED) {
-            mtx = OpenMutex(SYNCHRONIZE, FALSE, LOGLOCK);
+            mtx = OpenMutexA(SYNCHRONIZE, FALSE, LOGLOCK);
         }
         if (mtx != NULL) {
             for (;;) {
                 LOG_MESSAGE *qlms = (LOG_MESSAGE *) queue_dequeue(log);
                 if (file == INVALID_HANDLE_VALUE) {
                     if (fileExists(log_path)) {
-                        file = CreateFile(log_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                        file = CreateFileA(log_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                                 NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
                     } else {
-                        file = CreateFile(log_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                        file = CreateFileA(log_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                                 NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-                        if (file != INVALID_HANDLE_VALUE) {
-                            DWORD wr;
-                            unsigned char Header[2];
-                            Header[0] = 0xFF;
-                            Header[1] = 0xFE;
-                            WriteFile(file, Header, 2, &wr, NULL);
-                            FlushFileBuffers(file);
-                        }
                     }
                 }
 
@@ -196,31 +179,30 @@ DWORD WINAPI log_worker(void * p) {
                         )) {
                     switch (qlms->level) {
                         case LOG_ERROR:
-                            wcscpy(lvls, L"   ERROR ");
+                            lvls = "   ERROR ";
                             break;
                         case LOG_WARNING:
-                            wcscpy(lvls, L" WARNING ");
+                            lvls = " WARNING ";
                             break;
                         case LOG_INFO:
-                            wcscpy(lvls, L"    INFO ");
+                            lvls = "    INFO ";
                             break;
                         case LOG_DEBUG:
-                            wcscpy(lvls, L"   DEBUG ");
+                            lvls = "   DEBUG ";
                             break;
                         case LOG_FATAL:
-                            wcscpy(lvls, L"   FATAL ");
+                            lvls = "   FATAL ";
                             break;
                         case LOG_ALWAYS:
-                            wcscpy(lvls, L"         ");
+                            lvls = "         ";
                             break;
                     }
                     /*save formatted message to a file*/
-                    msg_size = idm_printf(&msg, L"%s%s[%d:%d]  %s\r\n", qlms->ts, lvls, qlms->pid, qlms->tid, (qlms->msg != NULL ? qlms->msg : L"(null)"));
+                    msg_size = asprintf(&msg, "%s%s[%d:%d]  %s\r\n", qlms->ts, lvls, qlms->pid, qlms->tid, (qlms->msg != NULL ? qlms->msg : "(null)"));
                     if ((pos = SetFilePointer(file, 0, NULL, FILE_END)) != INVALID_SET_FILE_POINTER) {
-                        msg_size = (msg_size * sizeof (wchar_t));
                         if (LockFile(file, pos, 0, msg_size, 0)) {
                             if (!WriteFile(file, (LPVOID) msg, msg_size, &written, NULL)) {
-                                DEBUG("OpenIDM log file write failed, error: %d", GetLastError());
+                                //DEBUG("OpenIDM log file write failed, error: %d", GetLastError());
                             }
                             FlushFileBuffers(file);
                             UnlockFile(file, pos, 0, msg_size, 0);
@@ -258,18 +240,18 @@ DWORD WINAPI log_worker(void * p) {
 }
 
 LOG_LEVEL get_log_level() {
-    wchar_t *loglevel = NULL;
+    char *loglevel = NULL;
     LOG_LEVEL level = LOG_ERROR;
-    if (read_registry_key(L"logLevel", &loglevel)) {
-        if (wcsicmp(loglevel, L"debug") == 0) {
+    if (read_registry_key("logLevel", &loglevel)) {
+        if (_stricmp(loglevel, "debug") == 0) {
             level = LOG_DEBUG;
-        } else if (wcsicmp(loglevel, L"info") == 0) {
+        } else if (_stricmp(loglevel, "info") == 0) {
             level = LOG_INFO;
-        } else if (wcsicmp(loglevel, L"warning") == 0) {
+        } else if (_stricmp(loglevel, "warning") == 0) {
             level = LOG_WARNING;
-        } else if (wcsicmp(loglevel, L"error") == 0) {
+        } else if (_stricmp(loglevel, "error") == 0) {
             level = LOG_ERROR;
-        } else if (wcsicmp(loglevel, L"fatal") == 0) {
+        } else if (_stricmp(loglevel, "fatal") == 0) {
             level = LOG_FATAL;
         }
         free(loglevel);
@@ -277,14 +259,14 @@ LOG_LEVEL get_log_level() {
     return level;
 }
 
-BOOL set_log_path(wchar_t ** path) {
+BOOL set_log_path(char **path) {
     BOOL status = FALSE;
-    wchar_t log_dir_tmp[MAX_PATH];
-    if (!read_registry_key(L"logPath", path) || (*path)[0] == '\0') {
-        if (GetTempPath(MAX_PATH, log_dir_tmp)) {
+    char log_dir_tmp[MAX_PATH];
+    if (!read_registry_key("logPath", path) || (*path)[0] == '\0') {
+        if (GetTempPathA(MAX_PATH, log_dir_tmp)) {
             DEBUG("unable to read logPath registry key, using %s for log files", log_dir_tmp);
             if (*path) free(*path);
-            if ((*path = _wcsdup(log_dir_tmp)) != NULL) {
+            if ((*path = strdup(log_dir_tmp)) != NULL) {
                 status = TRUE;
             }
         } else {

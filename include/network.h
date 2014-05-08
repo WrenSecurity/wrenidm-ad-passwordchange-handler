@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2014 ForgeRock AS. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -19,31 +19,17 @@
  * If applicable, add the following below the CDDL Header,
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
- * "Portions Copyrighted [2012] [Forgerock Inc]"
+ * "Portions Copyrighted [2014] [ForgeRock AS]"
  **/
-
 #ifndef __NETWORK_H__
 #define __NETWORK_H__
 
-#include <windows.h>
-#include <winhttp.h>
+#define SECURITY_WIN32
+#include <winsock2.h>
+#include <security.h>
 #include <wincrypt.h>
 
-#define TIMEOUT 4000//4 sec
-
-typedef enum {
-    IDM_MEMORY_ERROR = 1000,
-    IDM_SET_TIMEOUT_ERROR,
-    IDM_NET_TIMEOUT,
-    IDM_NET_REQUEST_OPEN_ERROR,
-    IDM_NET_REQUEST_CB_ERROR,
-    IDM_NET_REQUEST_SEND_ERROR,
-    IDM_FILE_OPEN_ERROR,
-    IDM_MMAP_CREATE_ERROR,
-    IDM_MMAP_ERROR,
-    IDM_PFX_OPEN_ERROR,
-    IDM_CERT_ENUM_ERROR
-} IDM_ERROR;
+#define NET_CONNECT_TIMEOUT 4 /*seconds*/
 
 typedef enum {
     NO_AUTH = 0,
@@ -52,48 +38,105 @@ typedef enum {
     IDM_HEADER_AUTH
 } AUTH_TYPE;
 
-typedef struct {
-    DWORD id;
-    HINTERNET hRequest;
-    DWORD dwSize;
-    DWORD dwTotalSize;
-    LPSTR lpBuffer;
-    DWORD dwTid;
-    DWORD dwErrorFlag;
-    DWORD dwErrorCode;
-    DWORD dwStatusCode;
-} REQUEST_CONTEXT_INT;
+enum {
+    SSLv3 = 1 << 0,
+    TLSv1 = 1 << 1,
+    TLSv11 = 1 << 2,
+    TLSv12 = 1 << 3,
+    SSL_VERSION_MASKS = 1 << 4
+};
+
+typedef SSIZE_T ssize_t;
 
 typedef struct {
-    HINTERNET hSession;
-    HINTERNET hConnect;
-    LPWSTR lpUrlPath;
-    DWORD dwTid;
-    DWORD dwErrorFlag;
-    DWORD dwErrorCode;
-    DWORD dwReqFlag;
-    DWORD dwSecFlag;
-    DWORD dwReqCount;
-    REQUEST_CONTEXT_INT **lpRequest;
-    AUTH_TYPE tokenType;
-    LPWSTR idToken0;
-    LPWSTR idToken1;
-    PCCERT_CONTEXT pCertContext;
-    HCERTSTORE pfxStore;
-} REQUEST_CONTEXT;
+    void *o;
+    void (*info)(void *, const char *, ...);
+    void (*warning)(void *, const char *, ...);
+    void (*error)(void *, const char *, ...);
+    void (*debug)(void *, const char *, ...);
+} net_log_t;
 
-REQUEST_CONTEXT * http_connect(LPWSTR url, int timeout_msec);
+typedef enum {
+    STATE_NONE = 0,
+    STATE_HANDSHAKE_READ,
+    STATE_HANDSHAKE_READ_COMPLETE,
+    STATE_HANDSHAKE_WRITE,
+    STATE_HANDSHAKE_WRITE_COMPLETE,
+    STATE_VERIFY_CERT,
+    STATE_VERIFY_CERT_COMPLETE,
+    STATE_COMPLETED_RENEGOTIATION,
+    STATE_COMPLETED_HANDSHAKE
+} ssl_state_t;
 
-BOOL send_get_request(REQUEST_CONTEXT *context, LPWSTR urlpath);
+typedef struct {
+    SOCKET sock;
 
-BOOL send_post_request(REQUEST_CONTEXT *context, LPWSTR urlpath, LPWSTR post, DWORD len);
+    struct url {
+        char ssl;
+        char *proto;
+        char *host;
+        char *uri;
+        unsigned int port;
+    } url;
 
-void http_close(REQUEST_CONTEXT *context);
+    struct ssl {
+        char on;
 
-void set_basic_auth(REQUEST_CONTEXT *context, LPWSTR username, LPWSTR userpassword);
+        CredHandle creds;
+        CtxtHandle ctx;
 
-void set_cert_auth(REQUEST_CONTEXT *context, LPWSTR pkcs12filepath, LPWSTR pkcs12passwd);
+        ssl_state_t state;
+        char *transport_read_buf_;
+        char *transport_write_buf_;
+        SecPkgContext_StreamSizes stream_sizes_;
 
-void set_idmheader_auth(REQUEST_CONTEXT *context, LPWSTR username, LPWSTR userpassword);
+        SecBuffer in_buffers_[2];
+        SecBuffer send_buffer_;
+        SECURITY_STATUS isc_status_;
+
+        char *payload_send_buffer_;
+        unsigned int payload_send_buffer_len_;
+        unsigned int bytes_sent_;
+        char *recv_buffer_;
+
+        unsigned int user_write_buf_len_;
+        const char *user_write_buf_;
+        unsigned int user_read_buf_len_;
+        char *user_read_buf_;
+
+        const char *decrypted_ptr_;
+        unsigned int bytes_decrypted_;
+        const char *received_ptr_;
+        unsigned int bytes_received_;
+
+        BOOL writing_first_token_;
+        BOOL ignore_ok_result_;
+        BOOL renegotiating_;
+        BOOL need_more_data_;
+
+        HCERTSTORE store_;
+        char *cfile;
+        char *cpass;
+
+        char verifypeer;
+        unsigned int version;
+    } ssl;
+
+    AUTH_TYPE auth;
+
+    net_log_t log;
+
+    char keepalive;
+    char nonblocking;
+    unsigned int timeout;
+} net_t;
+
+void net_init();
+void net_shutdown();
+
+net_t * net_connect_url(const char *url, const char *cfile, const char *cpass, unsigned int timeout, net_log_t *log);
+void net_close(net_t *);
+ssize_t http_post(net_t *c, const char * uri, const char **hdrs, size_t hdrsz, const char * post, const size_t len, char ** buff);
+unsigned int http_status(net_t *c, const char *data);
 
 #endif

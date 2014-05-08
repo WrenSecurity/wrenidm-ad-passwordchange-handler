@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2012-2014 ForgeRock AS. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -19,7 +19,7 @@
  * If applicable, add the following below the CDDL Header,
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
- * "Portions Copyrighted [2012] [Forgerock Inc]"
+ * "Portions Copyrighted [2012] [ForgeRock AS]"
  **/
 
 #include <windows.h>
@@ -38,7 +38,7 @@ BEGIN
 VALUE "CompanyName", "ForgeRock AS (http://forgerock.com/)" "\000"             
 VALUE "FileDescription", "OpenIDM Password Sync Service" "\000"             
 VALUE "FileVersion", VERSION "\000"             
-VALUE "LegalCopyright", "CDDL" "\000"             
+VALUE "LegalCopyright", "ForgeRock AS" "\000"             
 VALUE "OriginalFilename", "idmsync.exe" "\000"             
 VALUE "ProductName", "OpenIDM Password Sync Service" "\000"             
 VALUE "ProductVersion", VERSION "\000"             

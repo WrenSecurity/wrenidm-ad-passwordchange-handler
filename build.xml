@@ -1,7 +1,7 @@
 <!--
  DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
- Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ Copyright (c) 2012-2014 ForgeRock AS. All rights reserved.
 
  The contents of this file are subject to the terms
  of the Common Development and Distribution License
@@ -19,13 +19,13 @@
  If applicable, add the following below the CDDL Header,
  with the fields enclosed by brackets [] replaced by
  your own identifying information:
- "Portions Copyrighted [2012] [Forgerock Inc]"
+ "Portions Copyrighted [2012] [ForgeRock AS]"
 -->
  
 <project default="usage">
     <description>OpenIDM AD Password Sync Module and Service for Windows</description>
     
-    <property name="appvers" value="2.2.0"/>
+    <property name="appvers" value="3.0.0"/>
     
     <target name="all" depends="clean,version,build32,build64">
         <echo message="Dispatch to build distribution package"/>

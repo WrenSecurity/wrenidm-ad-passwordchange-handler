@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012 ForgeRock Inc. All rights reserved.
+ * Copyright (c) 2012-2014 ForgeRock AS. All rights reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -19,7 +19,7 @@
  * If applicable, add the following below the CDDL Header,
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
- * "Portions Copyrighted [2012] [Forgerock Inc]"
+ * "Portions Copyrighted [2012] [ForgeRock AS]"
  **/
 
 #define WIN32_LEAN_AND_MEAN
@@ -34,8 +34,8 @@
 
 LOG_QUEUE *log_handle;
 LOG_LEVEL log_level = LOG_ERROR;
-wchar_t log_path[MAX_PATH];
-wchar_t log_path_idx[MAX_PATH];
+char log_path[MAX_PATH];
+char log_path_idx[MAX_PATH];
 void *log_buffer[8192];
 SERVICE_STATUS ssts;
 SERVICE_STATUS_HANDLE hssts;
@@ -43,9 +43,9 @@ static HANDLE hthr_event;
 static HANDLE hkill_event;
 volatile BOOL file_worker_running = FALSE;
 
-#define SERVICE_NAME L"OpenIDM Password Sync"
-#define SERVICE_DESCR SERVICE_NAME L" Service"
-#define LOGHEAD L"service init\r\n\r\n\t#######################################\r\n\t# %-36s#\r\n\t# Version: %-27s#\r\n\t# Revision: %-26s#\r\n\t# Build date: %s %-12s#\r\n\t#######################################\r\n"
+#define SERVICE_NAME "OpenIDM Password Sync"
+#define SERVICE_DESCR SERVICE_NAME " Service"
+#define LOGHEAD "service init\r\n\r\n\t#######################################\r\n\t# %-36s#\r\n\t# Version: %-27s#\r\n\t# Revision: %-26s#\r\n\t# Build date: %s %-12s#\r\n\t#######################################\r\n"
 
 typedef void (*param_handler)(void *);
 
@@ -57,23 +57,23 @@ struct command_line {
 void WINAPI ServiceMain(DWORD argc, LPSTR* argv);
 
 static void show_usage() {
-    fwprintf(stdout, L"\n%s usage:\n\n"\
-            L"install service:\n"\
-            L" idmsync.exe --install\n\n"\
-            L"uninstall service:\n"\
-            L" idmsync.exe --remove\n\n"\
-            L"start service:\n"\
-            L" idmsync.exe --start\n\n"\
-            L"stop service:\n"\
-            L" idmsync.exe --stop\n\n"\
-            L"query service:\n"\
-            L" idmsync.exe --status\n\n"\
-            L"generate encryption key:\n"\
-            L" idmsync.exe --key\n\n"\
-            L"encrypt password:\n"\
-            L" idmsync.exe --encrypt \"key\" \"password\"\n\n"\
-            L"build and version info:\n"\
-            L" idmsync.exe --version\n\n", SERVICE_DESCR);
+    fprintf(stdout, "\n%s usage:\n\n"\
+            "install service:\n"\
+            " idmsync.exe --install\n\n"\
+            "uninstall service:\n"\
+            " idmsync.exe --remove\n\n"\
+            "start service:\n"\
+            " idmsync.exe --start\n\n"\
+            "stop service:\n"\
+            " idmsync.exe --stop\n\n"\
+            "query service:\n"\
+            " idmsync.exe --status\n\n"\
+            "generate encryption key:\n"\
+            " idmsync.exe --key\n\n"\
+            "encrypt password:\n"\
+            " idmsync.exe --encrypt \"key\" \"password\"\n\n"\
+            "build and version info:\n"\
+            " idmsync.exe --version\n\n", SERVICE_DESCR);
 }
 
 static void key_service(void *argv) {
@@ -99,12 +99,12 @@ static void start_service(void *argv) {
     SERVICE_STATUS_PROCESS ssp;
     DWORD old_checkpoint, start_tick_count, wait_time, bytes_needed;
 
-    schscm = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+    schscm = OpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (NULL == schscm) {
         show_windows_error(GetLastError());
         return;
     }
-    schs = OpenService(schscm, SERVICE_NAME, SERVICE_ALL_ACCESS);
+    schs = OpenServiceA(schscm, SERVICE_NAME, SERVICE_ALL_ACCESS);
     if (schs == NULL) {
         show_windows_error(GetLastError());
         CloseServiceHandle(schscm);
@@ -212,13 +212,13 @@ static void stop_service(void *argv) {
     DWORD timeout = 30000;
     DWORD wait_time;
 
-    schscm = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+    schscm = OpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (NULL == schscm) {
         show_windows_error(GetLastError());
         return;
     }
 
-    schs = OpenService(schscm, SERVICE_NAME, SERVICE_STOP | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS);
+    schs = OpenServiceA(schscm, SERVICE_NAME, SERVICE_STOP | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS);
     if (schs == NULL) {
         show_windows_error(GetLastError());
         CloseServiceHandle(schscm);
@@ -288,9 +288,9 @@ static void query_service(void *argv) {
     SERVICE_STATUS_PROCESS ssp;
     DWORD bytes_needed;
     BOOL status = FALSE;
-    schscm = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+    schscm = OpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (schscm != NULL) {
-        schs = OpenService(schscm, SERVICE_NAME, SERVICE_QUERY_STATUS);
+        schs = OpenServiceA(schscm, SERVICE_NAME, SERVICE_QUERY_STATUS);
         if (schs != NULL) {
             if (QueryServiceStatusEx(schs, SC_STATUS_PROCESS_INFO,
                     (LPBYTE) & ssp, sizeof (SERVICE_STATUS_PROCESS), &bytes_needed)) {
@@ -316,13 +316,13 @@ static void remove_service(void *argv) {
 
     stop_service(argv);
 
-    scm = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
+    scm = OpenSCManagerA(0, 0, SC_MANAGER_CREATE_SERVICE);
     if (!scm) {
         show_windows_error(GetLastError());
         return;
     }
 
-    svc = OpenService(scm, SERVICE_NAME, SERVICE_ALL_ACCESS);
+    svc = OpenServiceA(scm, SERVICE_NAME, SERVICE_ALL_ACCESS);
     if (!svc) {
         show_windows_error(GetLastError());
         CloseServiceHandle(scm);
@@ -344,18 +344,18 @@ static void remove_service(void *argv) {
 static void install_service(void *argv) {
     SC_HANDLE svc, scm;
     SERVICE_DESCRIPTION sdesc;
-    wchar_t modname[MAX_PATH];
+    char modname[MAX_PATH];
 
-    fwprintf(stdout, L"Installing %s service:\n", SERVICE_NAME);
-    GetModuleFileName(NULL, modname, sizeof (modname));
+    fprintf(stdout, "Installing %s service:\n", SERVICE_NAME);
+    GetModuleFileNameA(NULL, modname, sizeof (modname));
 
-    scm = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
+    scm = OpenSCManagerA(0, 0, SC_MANAGER_CREATE_SERVICE);
     if (!scm) {
         show_windows_error(GetLastError());
         return;
     }
 
-    svc = CreateService(scm, SERVICE_NAME, SERVICE_DESCR, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
+    svc = CreateServiceA(scm, SERVICE_NAME, SERVICE_DESCR, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
             SERVICE_AUTO_START, SERVICE_ERROR_NORMAL, modname, 0, 0, 0, NULL, NULL);
     if (!svc) {
         show_windows_error(GetLastError());
@@ -363,8 +363,8 @@ static void install_service(void *argv) {
         return;
     }
 
-    sdesc.lpDescription = L"This service provides secure password synchronization between Active Directory and OpenIDM";
-    if (!ChangeServiceConfig2(svc, SERVICE_CONFIG_DESCRIPTION, &sdesc)) {
+    sdesc.lpDescription = "This service provides secure password synchronization between Active Directory and OpenIDM";
+    if (!ChangeServiceConfig2A(svc, SERVICE_CONFIG_DESCRIPTION, &sdesc)) {
         show_windows_error(GetLastError());
         CloseServiceHandle(svc);
         CloseServiceHandle(scm);
@@ -377,9 +377,9 @@ static void install_service(void *argv) {
 }
 
 static void version_service(void *argv) {
-    fwprintf(stdout, L"\n%s\n", SERVICE_DESCR);
+    fprintf(stdout, "\n%s\n", SERVICE_DESCR);
     fprintf(stdout, " Version: %s\n", VERSION);
-    fwprintf(stdout, L" Revision: %s\n", VERSION_SVN);
+    fprintf(stdout, " Revision: %s\n", VERSION_SVN);
     fprintf(stdout, " Build date: %s %s\n\n", __DATE__, __TIME__);
 }
 
@@ -470,9 +470,9 @@ int main(int argc, char ** argv) {
         show_usage();
     }
 
-    scm = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
+    scm = OpenSCManagerA(0, 0, SC_MANAGER_CREATE_SERVICE);
     if (scm) {
-        svc = OpenService(scm, SERVICE_NAME, SERVICE_ALL_ACCESS);
+        svc = OpenServiceA(scm, SERVICE_NAME, SERVICE_ALL_ACCESS);
         if (!svc) {
             fprintf(stdout, "Service is not installed or no permission to modify it\n");
             CloseServiceHandle(scm);
@@ -490,74 +490,71 @@ int main(int argc, char ** argv) {
 }
 
 static DWORD WINAPI directory_time_worker(LPVOID param) {
-    PTP_TIMER timer = NULL;
+    HANDLE timer = NULL;
+    HANDLE tick = NULL;
     DWORD *period = (DWORD *) param;
-    BOOL cont = TRUE;
-    FILETIME time;
-    ULARGE_INTEGER utime;
-    wchar_t *data_dir = NULL;
+    BOOL cont = FALSE;
+    char *data_dir = NULL;
 
-    LOG(LOG_DEBUG, L"directory_time_worker(): starting (will fire at %d second intervals)...", (*period));
+    LOG(LOG_DEBUG, "directory_time_worker(): starting (will fire at %d second intervals)...", (*period));
 
-    if (!read_registry_key(L"dataPath", &data_dir) || data_dir[0] == '\0' || !create_directory(data_dir)) {
-        LOG(LOG_ERROR, L"directory_time_worker(): invalid dataPath registry key value, exiting...");
+    if (!read_registry_key("dataPath", &data_dir) || data_dir[0] == '\0' || !create_directory(data_dir)) {
+        LOG(LOG_ERROR, "directory_time_worker(): invalid dataPath registry key value, exiting...");
         terminate_service(0, 0);
         kill_service();
         cont = FALSE;
     }
 
-    timer = CreateThreadpoolTimer(file_time_worker, data_dir, NULL);
+    timer = CreateTimerQueue();
     if (timer == NULL) {
-        LOG(LOG_ERROR, L"directory_time_worker(): CreateThreadpoolTimer error (%d), exiting...", GetLastError());
+        LOG(LOG_ERROR, "directory_time_worker(): CreateTimerQueue error (%d), exiting...", GetLastError());
         terminate_service(0, 0);
         kill_service();
         cont = FALSE;
+    } else {
+        cont = CreateTimerQueueTimer(&tick, timer,
+                (WAITORTIMERCALLBACK) file_time_worker, (PVOID) data_dir, 1000, (*period) * 1000, WT_EXECUTELONGFUNCTION);
     }
 
     if (cont) {
-        utime.QuadPart = (LONGLONG) -(1 * 10 * 1000 * 1000);
-        time.dwHighDateTime = utime.HighPart;
-        time.dwLowDateTime = utime.LowPart;
-        SetThreadpoolTimer(timer, &time, (*period) * 1000, 0);
         while (WaitForSingleObject(hthr_event, INFINITE) != WAIT_OBJECT_0) {
             Sleep(1000);
         }
     }
 
     if (timer != NULL) {
-        SetThreadpoolTimer(timer, NULL, 0, 0);
-        CloseThreadpoolTimer(timer);
+        DeleteTimerQueue(timer);
     }
     if (data_dir) free(data_dir);
-    LOG(LOG_DEBUG, L"directory_time_worker(): finished");
+    LOG(LOG_DEBUG, "directory_time_worker(): finished");
     return 0;
 }
 
 static DWORD WINAPI directory_worker(LPVOID param) {
     HANDLE hchange, handles[2];
     BOOL cont = TRUE;
-    PTP_WORK change = NULL;
-    wchar_t *data_dir = NULL;
+    BOOL status = FALSE;
+    char *data_dir = NULL;
 
-    LOG(LOG_DEBUG, L"directory_worker(): starting...");
+    LOG(LOG_DEBUG, "directory_worker(): starting...");
 
-    if (!read_registry_key(L"dataPath", &data_dir) || data_dir[0] == '\0' || !create_directory(data_dir)) {
-        LOG(LOG_ERROR, L"directory_worker(): invalid dataPath registry key value, exiting...");
+    if (!read_registry_key("dataPath", &data_dir) || data_dir[0] == '\0' || !create_directory(data_dir)) {
+        LOG(LOG_ERROR, "directory_worker(): invalid dataPath registry key value, exiting...");
         terminate_service(0, 0);
         kill_service();
         cont = FALSE;
     }
 
-    hchange = FindFirstChangeNotification(data_dir, FALSE, FILE_NOTIFY_CHANGE_FILE_NAME);
+    hchange = FindFirstChangeNotificationA(data_dir, FALSE, FILE_NOTIFY_CHANGE_FILE_NAME);
     if (hchange == INVALID_HANDLE_VALUE) {
-        LOG(LOG_ERROR, L"directory_worker(): FindFirstChangeNotification error (%d), exiting...", GetLastError());
+        LOG(LOG_ERROR, "directory_worker(): FindFirstChangeNotification error (%d), exiting...", GetLastError());
         terminate_service(0, 0);
         kill_service();
         cont = FALSE;
     }
 
     if (hchange != INVALID_HANDLE_VALUE) {
-        LOG(LOG_DEBUG, L"directory_worker(): started");
+        LOG(LOG_DEBUG, "directory_worker(): started");
     }
 
     handles[0] = hchange;
@@ -565,19 +562,16 @@ static DWORD WINAPI directory_worker(LPVOID param) {
 
     while (cont) {
         if (WaitForMultipleObjects(2, handles, FALSE, INFINITE) - WAIT_OBJECT_0 == 0) {
-            change = CreateThreadpoolWork(file_worker, data_dir, NULL);
-            if (change != NULL) {
-                if (!InterlockedCompareExchange((volatile long*) &file_worker_running, TRUE, FALSE)) {
-                    SubmitThreadpoolWork(change);
-                } else {
-                    LOG(LOG_WARNING, L"directory_worker(): file_worker is running");
+            if (!InterlockedCompareExchange((volatile long*) &file_worker_running, TRUE, FALSE)) {
+                status = QueueUserWorkItem(file_worker, (PVOID) data_dir, WT_EXECUTEDEFAULT);
+                if (status == FALSE) {
+                    LOG(LOG_ERROR, "directory_worker(): QueueUserWorkItem error (%d)", GetLastError());
                 }
-                CloseThreadpoolWork(change);
             } else {
-                LOG(LOG_ERROR, L"directory_worker(): CreateThreadpoolWork error (%d)", GetLastError());
+                LOG(LOG_WARNING, "directory_worker(): file_worker is running");
             }
             if (FindNextChangeNotification(hchange) == FALSE) {
-                LOG(LOG_ERROR, L"directory_worker(): FindNextChangeNotification error (%d), exiting...", GetLastError());
+                LOG(LOG_ERROR, "directory_worker(): FindNextChangeNotification error (%d), exiting...", GetLastError());
                 terminate_service(0, 0);
                 kill_service();
                 cont = FALSE;
@@ -586,15 +580,15 @@ static DWORD WINAPI directory_worker(LPVOID param) {
     }
     FindCloseChangeNotification(hchange);
     if (data_dir) free(data_dir);
-    LOG(LOG_DEBUG, L"directory_worker(): finished");
+    LOG(LOG_DEBUG, "directory_worker(): finished");
     return 0;
 }
 
 void WINAPI ServiceMain(DWORD argc, LPSTR* argv) {
-    int error, timeout;
+    int timeout;
     HANDLE wrk_thr, log_thr;
     HANDLE handles[3];
-    wchar_t *log_dir = NULL, *poll_each = NULL;
+    char *log_dir = NULL, *poll_each = NULL;
 
     ssts.dwServiceType = SERVICE_WIN32;
     ssts.dwCurrentState = SERVICE_START_PENDING;
@@ -604,7 +598,7 @@ void WINAPI ServiceMain(DWORD argc, LPSTR* argv) {
     ssts.dwCheckPoint = 0;
     ssts.dwWaitHint = 0;
 
-    hssts = RegisterServiceCtrlHandler(SERVICE_NAME, (LPHANDLER_FUNCTION) control_handler);
+    hssts = RegisterServiceCtrlHandlerA(SERVICE_NAME, (LPHANDLER_FUNCTION) control_handler);
     if (hssts == (SERVICE_STATUS_HANDLE) 0) {
         DEBUG("ServiceMain(): registering control handler failed, error: %d", GetLastError());
         show_windows_error(GetLastError());
@@ -638,9 +632,10 @@ void WINAPI ServiceMain(DWORD argc, LPSTR* argv) {
         return;
     }
 
+    net_init();
     log_handle = queue_init(log_buffer);
-    swprintf(log_path, sizeof (log_path), L"%s/%s", log_dir, LOGNAME);
-    swprintf(log_path_idx, sizeof (log_path_idx), L"%s/%s.%%d", log_dir, LOGNAME);
+    _snprintf(log_path, sizeof (log_path), "%s/%s", log_dir, LOGNAME);
+    _snprintf(log_path_idx, sizeof (log_path_idx), "%s/%s.%%d", log_dir, LOGNAME);
     log_level = get_log_level();
     free(log_dir);
 
@@ -661,20 +656,20 @@ void WINAPI ServiceMain(DWORD argc, LPSTR* argv) {
     ssts.dwCurrentState = SERVICE_RUNNING;
     SetServiceStatus(hssts, &ssts);
 
-    if (!read_registry_key(L"pollEach", &poll_each) || poll_each[0] == '\0') {
+    if (!read_registry_key("pollEach", &poll_each) || poll_each[0] == '\0') {
         if (poll_each) free(poll_each);
         timeout = 0;
     } else {
-        timeout = wcstol(poll_each, NULL, 10);
+        timeout = strtol(poll_each, NULL, 10);
         if (errno == ERANGE) {
-            LOG(LOG_ERROR, L"ServiceMain(): invalid pollEach registry key value. Periodic directory poll is disabled - using default file system event worker");
+            LOG(LOG_ERROR, "ServiceMain(): invalid pollEach registry key value. Periodic directory poll is disabled - using default file system event worker");
             timeout = 0;
         }
         free(poll_each);
     }
 
     if (timeout == 0) {
-        LOG(LOG_INFO, L"ServiceMain(): periodic directory poll is disabled - using default file system event worker");
+        LOG(LOG_INFO, "ServiceMain(): periodic directory poll is disabled - using default file system event worker");
     }
 
     wrk_thr = CreateThread(NULL, 0,
@@ -684,16 +679,17 @@ void WINAPI ServiceMain(DWORD argc, LPSTR* argv) {
         ssts.dwCurrentState = SERVICE_STOPPED;
         ssts.dwWin32ExitCode = -1;
         SetServiceStatus(hssts, &ssts);
-        LOG(LOG_ERROR, L"ServiceMain(): create worker thread failed, error: %d", GetLastError());
+        LOG(LOG_ERROR, "ServiceMain(): create worker thread failed, error: %d", GetLastError());
     }
     handles[0] = wrk_thr;
     handles[1] = hkill_event;
     handles[2] = hthr_event;
     WaitForMultipleObjects(3, handles, TRUE, INFINITE);
-    stop_logger(L"service exit", log_handle);
+    stop_logger("service exit", log_handle);
     WaitForSingleObject(log_thr, INFINITE);
     CloseHandle(wrk_thr);
     CloseHandle(log_thr);
     Sleep(2000);
     queue_delete(log_handle);
+    net_shutdown();
 }
