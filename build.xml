@@ -25,7 +25,7 @@
 <project default="usage">
     <description>OpenIDM AD Password Sync Module and Service for Windows</description>
     
-    <property name="appvers" value="3.0.0"/>
+    <property name="appvers" value="1.0.1"/>
     
     <target name="all" depends="clean,version,build32,build64">
         <echo message="Dispatch to build distribution package"/>
