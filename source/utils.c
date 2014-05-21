@@ -786,3 +786,14 @@ uint64_t max_log_size() {
     }
     return msz;
 }
+
+const char *json_payload_type() {
+    int version = 1;
+    char *ver = NULL;
+    if (!read_registry_key("idm2Only", &ver) || ver[0] == '\0') {
+        LOG(LOG_DEBUG, "json_payload_type(): using OpenIDM 2.x compatible data type");
+        version = 0;
+    }
+    if (ver) free(ver);
+    return version ? JSON_PAYLOAD : JSON_PAYLOAD_IDM2;
+}

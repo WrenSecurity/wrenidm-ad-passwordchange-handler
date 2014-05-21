@@ -52,6 +52,29 @@
         "  }"\
         "}]"
 
+#define JSON_PAYLOAD_IDM2 \
+        "[{"\
+        " \"replace\" : \"/%s\","\
+        " \"value\" :"\
+        "  {"\
+        "   \"$crypto\" :"\
+        "    {"\
+        "     \"value\" :"\
+        "      {"\
+        "       \"data\" : \"%s\","\
+        "       \"cipher\" : \"AES/ECB/PKCS5Padding\","\
+        "       \"key\" :"\
+        "        {"\
+        "         \"data\" : \"%s\","\
+        "         \"cipher\" : \"RSA/ECB/PKCS1Padding\","\
+        "         \"key\" : \"%s\""\
+        "        }"\
+        "      },"\
+        "     \"type\" : \"x-simple-encryption\""\
+        "    }"\
+        "  }"\
+        "}]"
+
 #define IDM_REG_SUBKEY "SOFTWARE\\ForgeRock\\OpenIDM\\PasswordSync"
 
 #define DEBUG(fmt, ...)                 _DEBUG_(fmt, __VA_ARGS__)
@@ -141,6 +164,7 @@ size_t write_file(const char *fn, const char *data, size_t size);
 uint64_t timestamp_id();
 char *timestamp_log();
 uint64_t max_log_size();
+const char *json_payload_type();
 
 char * md5(const char *plain, size_t len);
 char * base64_encode(const char *input, size_t length, size_t *outlen);

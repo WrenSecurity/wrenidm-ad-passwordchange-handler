@@ -136,7 +136,7 @@ static DWORD CALLBACK password_change_worker(LPVOID context) {
                     asprintf(&file, "%s/%s-%lld.json", dir, hash, timestamp_id());
                     if (file != NULL) {
                         user_b64 = base64_encode(ctx->username, ctx->ulength, NULL);
-                        xml_size = asprintf(&xml, JSON_PAYLOAD, pwd_attr_id, enc, key, key_alias);
+                        xml_size = asprintf(&xml, json_payload_type(), pwd_attr_id, enc, key, key_alias);
                         if (xml != NULL) {
                             BOOL net_status = FALSE;
                             char *url = NULL, *ret = NULL,
