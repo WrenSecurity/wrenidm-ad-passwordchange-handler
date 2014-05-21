@@ -790,7 +790,7 @@ uint64_t max_log_size() {
 const char *json_payload_type() {
     int version = 1;
     char *ver = NULL;
-    if (!read_registry_key("idm2Only", &ver) || ver[0] == '\0') {
+    if (read_registry_key("idm2Only", &ver) && ISVALID(ver)) {
         LOG(LOG_DEBUG, "json_payload_type(): using OpenIDM 2.x compatible data type");
         version = 0;
     }
