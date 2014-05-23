@@ -22,6 +22,7 @@
  * "Portions Copyrighted [2014] [ForgeRock AS]"
  **/
 #define WIN32_LEAN_AND_MEAN
+#define _WIN32_WINNT 0x0502
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -46,10 +47,10 @@
 #define net_error_int(c, e) \
    do {LPSTR es = NULL; \
    if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, 0, e, 0, (LPSTR) & es, 0, 0) == 0) { \
-        if (c && c->log.error) c->log.error(c->log.o, "net_error(%s:%d) unknown error code (%X)", __FILE__, __LINE__, e); } else { \
+        if (c && c->log.error) c->log.error(c->log.o, "net_error(%s:%d) unknown error code (%d/%X)", __FILE__, __LINE__, e, e); } else { \
         char *p = strchr(es, '\r'); \
         if (p != NULL) *p = '\0'; \
-        if (c && c->log.error) c->log.error(c->log.o, "net_error(%s:%d) %s (%X)", __FILE__, __LINE__, es, e); \
+        if (c && c->log.error) c->log.error(c->log.o, "net_error(%s:%d) %s (%d/%X)", __FILE__, __LINE__, es, e, e); \
         LocalFree(es);}} while(0)
 
 static int net_ssl_loop(net_t *c, int last_io_result);
@@ -254,7 +255,7 @@ static void net_connect_int(net_t *net) {
 
     _snprintf(service, sizeof (service), "%u", net->url.port);
     memset(&hints, 0, sizeof (struct addrinfo));
-    hints.ai_flags = AI_NUMERICSERV;
+    hints.ai_flags = 0;
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
@@ -277,89 +278,98 @@ static void net_connect_int(net_t *net) {
         return;
     }
 
-    err = 1;
     for (rp = res; rp != NULL; rp = rp->ai_next) {
+        if (rp->ai_family != AF_INET && rp->ai_family != AF_INET6 &&
+                rp->ai_socktype != SOCK_STREAM && rp->ai_protocol != IPPROTO_TCP) continue;
+        if (net->log.debug) net->log.debug(net->log.o, "net_connect_int() connecting to %s:%d (%s)",
+                net->url.host, net->url.port, rp->ai_family == AF_INET ? "IPv4" : "IPv6");
+        
         if ((net->sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) == INVALID_SOCKET) {
             if (net->log.error) net->log.error(net->log.o,
                     "net_connect_int() cannot create socket while connecting to %s:%d", net->url.host, net->url.port);
             net_error_int(net, net_error());
         } else {
-            err = 0;
-            break;
-        }
-    }
-    if (err == 1) {
-        freeaddrinfo(res);
-        net_close_int(net->sock);
-        net->sock = INVALID_SOCKET;
-        return;
-    }
-
-    if (net->timeout > 0) {
-        struct timeval tva;
-        memset(&tva, 0, sizeof (tva));
-        tva.tv_sec = net->timeout;
-        tva.tv_usec = 0;
-        if (setsockopt(net->sock, SOL_SOCKET, SO_RCVTIMEO, (char *) &tva, sizeof (tva)) < 0) {
-            net_error_int(net, net_error());
-        }
-        if (setsockopt(net->sock, SOL_SOCKET, SO_SNDTIMEO, (char *) &tva, sizeof (tva)) < 0) {
-            net_error_int(net, net_error());
-        }
-    }
-
-    if (setsockopt(net->sock, IPPROTO_TCP, TCP_NODELAY, (void *) &on, sizeof (on)) < 0) {
-        net_error_int(net, net_error());
-    }
-    /* turn off bind address checking, and allow port numbers to be reused */
-    if (setsockopt(net->sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof (on)) < 0) {
-        net_error_int(net, net_error());
-    }
-
-    ioctlsocket(net->sock, FIONBIO, &nonblock);
-    err = connect(net->sock, res->ai_addr, (DWORD) res->ai_addrlen);
-    if (err == 0) {
-        if (net->log.debug) net->log.debug(net->log.o, "net_connect_int() connected to %s:%d", net->url.host, net->url.port);
-    } else if (err == SOCKET_ERROR && net_in_progress(net_error())) {
-        fd_set fds, eds;
-        struct timeval tv;
-        memset(&tv, 0, sizeof (tv));
-        tv.tv_sec = net->timeout > 0 ? net->timeout : NET_CONNECT_TIMEOUT;
-        tv.tv_usec = 0;
-        FD_ZERO(&fds);
-        FD_ZERO(&eds);
-        FD_SET(net->sock, &fds);
-        FD_SET(net->sock, &eds);
-        err = select(FD_SETSIZE, NULL, &fds, &eds, &tv);
-        if (err == 0) {
-            if (net->log.error) net->log.error(net->log.o, "net_connect_int() timeout connecting to %s:%d", net->url.host, net->url.port);
-            net_close_int(net->sock);
-            net->sock = INVALID_SOCKET;
-        } else {
-            if (FD_ISSET(net->sock, &fds)) {
-                int ret, rlen = sizeof (ret);
-                if (getsockopt(net->sock, SOL_SOCKET, SO_ERROR, (char *) &ret, &rlen) == 0) {
-                    if (net->log.debug) net->log.debug(net->log.o, "net_connect_int() connected to %s:%d", net->url.host, net->url.port);
-                } else {
-                    if (net->log.error) net->log.error(net->log.o, "net_connect_int() getsockopt error");
+            if (net->timeout > 0) {
+                struct timeval tva;
+                memset(&tva, 0, sizeof (tva));
+                tva.tv_sec = net->timeout;
+                tva.tv_usec = 0;
+                if (setsockopt(net->sock, SOL_SOCKET, SO_RCVTIMEO, (char *) &tva, sizeof (tva)) < 0) {
                     net_error_int(net, net_error());
+                }
+                if (setsockopt(net->sock, SOL_SOCKET, SO_SNDTIMEO, (char *) &tva, sizeof (tva)) < 0) {
+                    net_error_int(net, net_error());
+                }
+            }
+
+            if (setsockopt(net->sock, IPPROTO_TCP, TCP_NODELAY, (void *) &on, sizeof (on)) < 0) {
+                net_error_int(net, net_error());
+            }
+            /* turn off bind address checking, and allow port numbers to be reused */
+            if (setsockopt(net->sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof (on)) < 0) {
+                net_error_int(net, net_error());
+            }
+
+            ioctlsocket(net->sock, FIONBIO, &nonblock);
+            err = connect(net->sock, rp->ai_addr, (DWORD) rp->ai_addrlen);
+            if (err == 0) {
+                if (net->log.debug) net->log.debug(net->log.o, "net_connect_int() connected to %s:%d (%s)", net->url.host, net->url.port,
+                        rp->ai_family == AF_INET ? "IPv4" : "IPv6");
+                break;
+            } else if (err == SOCKET_ERROR && net_in_progress(net_error())) {
+                fd_set fds, eds;
+                struct timeval tv;
+                memset(&tv, 0, sizeof (tv));
+                tv.tv_sec = net->timeout > 0 ? net->timeout : NET_CONNECT_TIMEOUT;
+                tv.tv_usec = 0;
+                FD_ZERO(&fds);
+                FD_ZERO(&eds);
+                FD_SET(net->sock, &fds);
+                FD_SET(net->sock, &eds);
+                err = select(net->sock + 1, NULL, &fds, &eds, &tv);
+                if (err == 0) {
+                    if (net->log.error) net->log.error(net->log.o, "net_connect_int() timeout connecting to %s:%d (%s)", net->url.host, net->url.port,
+                            rp->ai_family == AF_INET ? "IPv4" : "IPv6");
                     net_close_int(net->sock);
                     net->sock = INVALID_SOCKET;
+                } else {
+                    int ret, rlen = sizeof (ret);
+                    if (FD_ISSET(net->sock, &fds)) {
+                        if (getsockopt(net->sock, SOL_SOCKET, SO_ERROR, (char *) &ret, &rlen) == 0) {
+                            if (net->log.debug) net->log.debug(net->log.o, "net_connect_int() connected to %s:%d (%s)", net->url.host, net->url.port,
+                                    rp->ai_family == AF_INET ? "IPv4" : "IPv6");
+                            break;
+                        } else {
+                            if (net->log.error) net->log.error(net->log.o, "net_connect_int() getsockopt error");
+                            net_error_int(net, net_error());
+                            net_close_int(net->sock);
+                            net->sock = INVALID_SOCKET;
+                        }
+                    } else if (FD_ISSET(net->sock, &eds)) {
+                        if (getsockopt(net->sock, SOL_SOCKET, SO_ERROR, (char *) &ret, &rlen) == 0) {
+                            if (net_error() == WSAECONNREFUSED) {
+                                if (net->log.error) net->log.error(net->log.o, "net_connect_int() connection refused error connecting to %s:%d (%s)",
+                                        net->url.host, net->url.port, rp->ai_family == AF_INET ? "IPv4" : "IPv6");
+                            } else {
+                                if (net->log.error) net->log.error(net->log.o, "net_connect_int() socket error %d/%d", ret, net_error());
+                            }
+                        } else {
+                            if (net->log.error) net->log.error(net->log.o, "net_connect_int() socket/getsockopt error %d", net_error());
+                        }
+                        if (err == SOCKET_ERROR) {
+                            net_error_int(net, net_error());
+                        }
+                        net_close_int(net->sock);
+                        net->sock = INVALID_SOCKET;
+                    }
                 }
-            } else if (FD_ISSET(net->sock, &eds)) {
-                if (net->log.error) net->log.error(net->log.o, "net_connect_int() socket error");
-                if (err == SOCKET_ERROR) {
-                    net_error_int(net, net_error());
-                }
+            } else {
+                if (net->log.error) net->log.error(net->log.o, "net_connect_int() connect error");
+                net_error_int(net, net_error());
                 net_close_int(net->sock);
                 net->sock = INVALID_SOCKET;
             }
         }
-    } else {
-        if (net->log.error) net->log.error(net->log.o, "net_connect_int() connect error");
-        net_error_int(net, net_error());
-        net_close_int(net->sock);
-        net->sock = INVALID_SOCKET;
     }
     if (net->sock != INVALID_SOCKET) {
         if (net->nonblocking == 0) {
