@@ -62,7 +62,7 @@ Source: ".\out\64\idmsync.dll"; DestDir: "{sys}"; DestName: "idmsync.dll"; Flags
 Source: ".\out\64\idmsync.exe"; DestDir: "{app}"; DestName: "idmsync.exe"; Flags: replacesameversion restartreplace uninsrestartdelete; Check: Is64BitInstallMode
 Source: ".\out\32\idmsync.dll"; DestDir: "{sys}"; DestName: "idmsync.dll"; Flags: replacesameversion restartreplace uninsrestartdelete; Check: not Is64BitInstallMode
 Source: ".\out\32\idmsync.exe"; DestDir: "{app}"; DestName: "idmsync.exe"; Flags: replacesameversion restartreplace uninsrestartdelete; Check: not Is64BitInstallMode
-Source: ".\license.txt"; DestDir: "{app}"; DestName: "license.txt";
+Source: "C:\ForgeRock\license\license.txt"; DestDir: "{app}"; DestName: "license.txt";
 
 [Run]
 Filename: "{app}\idmsync.exe"; Parameters: "--install"; StatusMsg: "Installing OpenIDM Service..."
