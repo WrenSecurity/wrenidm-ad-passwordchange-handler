@@ -290,14 +290,11 @@ static void net_connect_int(net_t *net) {
             net_error_int(net, net_error());
         } else {
             if (net->timeout > 0) {
-                struct timeval tva;
-                memset(&tva, 0, sizeof (tva));
-                tva.tv_sec = net->timeout;
-                tva.tv_usec = 0;
-                if (setsockopt(net->sock, SOL_SOCKET, SO_RCVTIMEO, (char *) &tva, sizeof (tva)) < 0) {
+                DWORD tva = net->timeout * 1000; /*timeout, in milliseconds, for blocking send/receive calls*/
+                if (setsockopt(net->sock, SOL_SOCKET, SO_RCVTIMEO, (const char *) &tva, sizeof (tva)) < 0) {
                     net_error_int(net, net_error());
                 }
-                if (setsockopt(net->sock, SOL_SOCKET, SO_SNDTIMEO, (char *) &tva, sizeof (tva)) < 0) {
+                if (setsockopt(net->sock, SOL_SOCKET, SO_SNDTIMEO, (const char *) &tva, sizeof (tva)) < 0) {
                     net_error_int(net, net_error());
                 }
             }
