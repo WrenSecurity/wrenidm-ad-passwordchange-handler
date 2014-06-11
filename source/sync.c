@@ -159,9 +159,9 @@ static DWORD CALLBACK password_change_worker(LPVOID context) {
                             asprintf(&url, idm_url_fixed, ctx->username);
                             /* try to send change request */
                             if (auth == CERT_AUTH) {
-                                n = net_connect_url(url, auth_token0_empty ? NULL : auth_token0, auth_token1, NET_CONNECT_TIMEOUT, &l);
+                                n = net_connect_url(url, auth_token0_empty ? NULL : auth_token0, auth_token1, net_timeout(), &l);
                             } else {
-                                n = net_connect_url(url, NULL, NULL, NET_CONNECT_TIMEOUT, &l);
+                                n = net_connect_url(url, NULL, NULL, net_timeout(), &l);
                             }
 
                             if (n != NULL) {

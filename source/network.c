@@ -283,7 +283,7 @@ static void net_connect_int(net_t *net) {
                 rp->ai_socktype != SOCK_STREAM && rp->ai_protocol != IPPROTO_TCP) continue;
         if (net->log.debug) net->log.debug(net->log.o, "net_connect_int() connecting to %s:%d (%s)",
                 net->url.host, net->url.port, rp->ai_family == AF_INET ? "IPv4" : "IPv6");
-        
+
         if ((net->sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) == INVALID_SOCKET) {
             if (net->log.error) net->log.error(net->log.o,
                     "net_connect_int() cannot create socket while connecting to %s:%d", net->url.host, net->url.port);
@@ -1514,4 +1514,23 @@ ssize_t http_post(net_t *c, const char * uri, const char **hdrs, size_t hdrsz, c
         }
     }
     return rlen;
+}
+
+BOOL validate_url(const char *url) {
+    BOOL ret = FALSE;
+    net_t *n = NULL;
+    if (ISVALID(url)) {
+        n = (net_t *) calloc(1, sizeof (net_t));
+        if (n != NULL) {
+            if (net_url(url, n)) {
+                if (ISVALID(n->url.proto) &&
+                        (_stricmp(n->url.proto, "https") == 0 || _stricmp(n->url.proto, "http") == 0)) {
+                    ret = TRUE;
+                }
+            }
+            net_free_url(n);
+            free(n);
+        }
+    }
+    return ret;
 }

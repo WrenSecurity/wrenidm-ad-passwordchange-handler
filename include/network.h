@@ -29,7 +29,7 @@
 #include <security.h>
 #include <wincrypt.h>
 
-#define NET_CONNECT_TIMEOUT 4 /*seconds*/
+#define NET_CONNECT_TIMEOUT 16 /*seconds*/
 
 typedef enum {
     NO_AUTH = 0,
@@ -138,5 +138,7 @@ net_t * net_connect_url(const char *url, const char *cfile, const char *cpass, u
 void net_close(net_t *);
 ssize_t http_post(net_t *c, const char * uri, const char **hdrs, size_t hdrsz, const char * post, const size_t len, char ** buff);
 unsigned int http_status(net_t *c, const char *data);
+
+BOOL validate_url(const char *url);
 
 #endif

@@ -75,6 +75,8 @@
         "  }"\
         "}]"
 
+#define MAX_FSIZE 5120000 /* 5MB */
+
 #define IDM_REG_SUBKEY "SOFTWARE\\ForgeRock\\OpenIDM\\PasswordSync"
 
 #define DEBUG(fmt, ...)                 _DEBUG_(fmt, __VA_ARGS__)
@@ -165,6 +167,7 @@ uint64_t timestamp_id();
 char *timestamp_log();
 uint64_t max_log_size();
 const char *json_payload_type();
+unsigned int net_timeout();
 
 char * md5(const char *plain, size_t len);
 char * base64_encode(const char *input, size_t length, size_t *outlen);
@@ -194,5 +197,8 @@ void log_info(void *, const char *format, ...);
 void log_warning(void *, const char *format, ...);
 void log_error(void *, const char *format, ...);
 void log_debug(void *, const char *format, ...);
+
+void validate_directory(const char *path);
+void validate_pkcs12(const char * certf, const char * certp);
 
 #endif

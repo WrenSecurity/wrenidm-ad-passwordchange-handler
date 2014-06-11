@@ -177,9 +177,9 @@ DWORD CALLBACK file_worker(LPVOID ctx) {
                             asprintf(&url, idm_url_fixed, user);
                             /* try to send change request */
                             if (auth == CERT_AUTH) {
-                                n = net_connect_url(url, auth_token0_empty ? NULL : auth_token0, auth_token1, NET_CONNECT_TIMEOUT, &l);
+                                n = net_connect_url(url, auth_token0_empty ? NULL : auth_token0, auth_token1, net_timeout(), &l);
                             } else {
-                                n = net_connect_url(url, NULL, NULL, NET_CONNECT_TIMEOUT, &l);
+                                n = net_connect_url(url, NULL, NULL, net_timeout(), &l);
                             }
 
                             data[data_size - usize] = 0;

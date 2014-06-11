@@ -68,6 +68,8 @@ static void show_usage() {
             " idmsync.exe --stop\n\n"\
             "query service:\n"\
             " idmsync.exe --status\n\n"\
+            "validate configuration:\n"\
+            " idmsync.exe --validate\n\n"\
             "generate encryption key:\n"\
             " idmsync.exe --key\n\n"\
             "encrypt password:\n"\
@@ -383,6 +385,182 @@ static void version_service(void *argv) {
     fprintf(stdout, " Build date: %s %s\n\n", __DATE__, __TIME__);
 }
 
+static void validate_service(void *argv) {
+#define USERNAME_LENGTH 256
+    DWORD username_len = USERNAME_LENGTH;
+    char username[USERNAME_LENGTH];
+    char *val = NULL, *val_r1 = NULL, *val_r2 = NULL;
+    GetUserNameA(username, &username_len);
+    fprintf(stdout, "\n%s\n", SERVICE_DESCR);
+    fprintf(stdout, "\nValidating configuration parameters as user \"%s\"\n", username);
+    fprintf(stdout, "\nLogging parameters:\nlogPath:\n");
+    read_registry_key("logPath", &val);
+    validate_directory(val);
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\nlogLevel:\n");
+    read_registry_key("logLevel", &val);
+    if (ISVALID(val) && (!strcmp(val, "error") || !strcmp(val, "info") || !strcmp(val, "warning") ||
+            !strcmp(val, "fatal") || !strcmp(val, "debug"))) {
+        fprintf(stdout, "   \"%s\" is a valid logLevel entry.\n", LOGEMPTY(val));
+    } else {
+        fprintf(stdout, "   \"%s\" is not a valid logLevel entry. Accepted values are error, info, warning, fatal or debug.\n", LOGEMPTY(val));
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\nlogSize:\n");
+    read_registry_key("logSize", &val);
+    errno = 0;
+    if (ISVALID(val)) {
+        int v = strtol(val, NULL, 10);
+        if (v <= 0 || errno == ERANGE) {
+            fprintf(stdout, "   \"%s\" is not a valid logSize entry. Will use default %d MB file size limit.\n", LOGEMPTY(val), MAX_FSIZE);
+        } else {
+            fprintf(stdout, "   \"%s\" is a valid logSize entry.\n", LOGEMPTY(val));
+        }
+    } else {
+        fprintf(stdout, "   \"\" is not a valid logSize entry. Will use default %d MB file size limit.\n", MAX_FSIZE);
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\nService and data storage parameters:\ndataPath:\n");
+    read_registry_key("dataPath", &val);
+    validate_directory(val);
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\npollEach:\n");
+    read_registry_key("pollEach", &val);
+    errno = 0;
+    if (ISVALID(val)) {
+        int v = strtol(val, NULL, 10);
+        if (v <= 0 || errno == ERANGE) {
+            fprintf(stdout, "   \"%s\" is not a valid pollEach entry. Periodic directory poll is disabled.\n", LOGEMPTY(val));
+        } else {
+            fprintf(stdout, "   \"%s\" is a valid pollEach entry.\n", LOGEMPTY(val));
+        }
+    } else {
+        fprintf(stdout, "   Periodic directory poll is disabled. Service is using file system notification events.\n");
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\nOpenIDM service parameters:\nidmURL:\n");
+    read_registry_key("idmURL", &val);
+    if (validate_url(val)) {
+        fprintf(stdout, "   \"%s\" is a valid idmURL entry.\n", LOGEMPTY(val));
+    } else {
+        fprintf(stdout, "   \"%s\" is not a valid idmURL entry.\n", LOGEMPTY(val));
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\nkeyAlias:\n");
+    read_registry_key("keyAlias", &val);
+    if (ISVALID(val)) {
+        fprintf(stdout, "   \"%s\" is a valid keyAlias entry.\n", LOGEMPTY(val));
+    } else {
+        fprintf(stdout, "   \"%s\" is not a valid keyAlias entry.\n", LOGEMPTY(val));
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\npasswordAttr:\n");
+    read_registry_key("passwordAttr", &val);
+    if (ISVALID(val)) {
+        fprintf(stdout, "   \"%s\" is a valid passwordAttr entry.\n", LOGEMPTY(val));
+    } else {
+        fprintf(stdout, "   \"%s\" is not a valid passwordAttr entry.\n", LOGEMPTY(val));
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\nidm2Only:\n");
+    read_registry_key("idm2Only", &val);
+    if (ISVALID(val)) {
+        fprintf(stdout, "   Service is configured to run in OpenIDM 2.x compatibility mode.\n");
+    } else {
+        fprintf(stdout, "   Service is configured to run with OpenIDM version 3.x or newer.\n");
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\nnetTimeout:\n");
+    read_registry_key("netTimeout", &val);
+    errno = 0;
+    if (ISVALID(val)) {
+        int v = strtol(val, NULL, 10);
+        if (v <= 0 || errno == ERANGE) {
+            fprintf(stdout, "   \"%s\" is not a valid netTimeout entry. Will use default %d second network timeout.\n", LOGEMPTY(val), NET_CONNECT_TIMEOUT);
+        } else {
+            fprintf(stdout, "   \"%s\" is a valid netTimeout entry.\n", LOGEMPTY(val));
+        }
+    } else {
+        fprintf(stdout, "   \"\" is not a valid netTimeout entry. Will use default %d second network timeout.\n", NET_CONNECT_TIMEOUT);
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    fprintf(stdout, "\nauthType, authToken0 and authToken1:\n");
+    read_registry_key("authType", &val);
+    read_registry_key("authToken0", &val_r1);
+    read_registry_key("authToken1", &val_r2);
+    if (ISVALID(val)) {
+        if (!strcmp(val, "basic") || !strcmp(val, "idm")) {
+            fprintf(stdout, "   Service is configured to use \"%s\" authentication\n", (!strcmp(val, "idm") ? "OpenIDM Header" : "HTTP Basic"));
+            if (ISVALID(val_r1) && ISVALID(val_r2)) {
+                fprintf(stdout, "   \"%s\" is a valid authType entry.\n", LOGEMPTY(val));
+            } else {
+                fprintf(stdout, "   invalid (empty) authToken0 or authToken1 entry.\n");
+            }
+        } else if (!strcmp(val, "cert")) {
+            fprintf(stdout, "   Service is configured to use \"Certificate\" authentication\n");
+            validate_pkcs12(val_r1, val_r2);
+        } else {
+            fprintf(stdout, "   \"%s\" invalid authType entry. Accepted values are basic, idm or cert.\n", LOGEMPTY(val));
+        }
+    } else {
+        fprintf(stdout, "   Service is configured to not use any authentication.\n");
+    }
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    if (val_r1 != NULL) {
+        free(val_r1);
+        val_r1 = NULL;
+    }
+    if (val_r2 != NULL) {
+        free(val_r2);
+        val_r2 = NULL;
+    }
+    fprintf(stdout, "\nPassword encryption parameters:\ncertFile and certPassword:\n");
+    read_registry_key("certFile", &val);
+    read_registry_key("certPassword", &val_r1);
+    validate_pkcs12(val, val_r1);
+    if (val != NULL) {
+        free(val);
+        val = NULL;
+    }
+    if (val_r1 != NULL) {
+        free(val_r1);
+        val_r1 = NULL;
+    }
+}
+
 static void kill_service() {
     SetEvent(hthr_event);
     Sleep(2000);
@@ -452,6 +630,7 @@ int main(int argc, char ** argv) {
         {"--key", key_service},
         {"--encrypt", encrypt_service},
         {"--version", version_service},
+        {"--validate", validate_service},
         {NULL}
     };
     SERVICE_TABLE_ENTRY service_table[] = {
@@ -660,8 +839,9 @@ void WINAPI ServiceMain(DWORD argc, LPSTR* argv) {
         if (poll_each) free(poll_each);
         timeout = 0;
     } else {
+        errno = 0;
         timeout = strtol(poll_each, NULL, 10);
-        if (errno == ERANGE) {
+        if (timeout <= 0 || errno == ERANGE) {
             LOG(LOG_ERROR, "ServiceMain(): invalid pollEach registry key value. Periodic directory poll is disabled - using default file system event worker");
             timeout = 0;
         }

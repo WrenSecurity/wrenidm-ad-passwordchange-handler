@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <sys/types.h> 
 #include "utils.h"
+#include "network.h"
 #include "log.h"
 
 char *utf8_encode(const wchar_t *wstr, size_t *outlen) {
@@ -770,13 +771,13 @@ void log_debug(void *o, const char *format, ...) {
 }
 
 uint64_t max_log_size() {
-#define MAX_FSIZE 5120000 /* 5Mb */
     uint64_t msz = MAX_FSIZE;
     char *lsz = NULL;
     if (!read_registry_key("logSize", &lsz) || lsz[0] == '\0') {
         if (lsz) free(lsz);
         msz = MAX_FSIZE;
     } else {
+        errno = 0;
         msz = (uint64_t) _strtoui64(lsz, NULL, 10);
         if (errno == ERANGE) {
             LOG(LOG_ERROR, "max_log_size(): invalid logSize registry key value. Defaulting to %d bytes", MAX_FSIZE);
@@ -796,4 +797,93 @@ const char *json_payload_type() {
     }
     if (ver) free(ver);
     return version ? JSON_PAYLOAD : JSON_PAYLOAD_IDM2;
+}
+
+unsigned int net_timeout() {
+    unsigned int t = NET_CONNECT_TIMEOUT;
+    char *val = NULL;
+    if (read_registry_key("netTimeout", &val) && ISVALID(val)) {
+        errno = 0;
+        t = strtol(val, NULL, 10);
+        if (t == 0 || errno == ERANGE) {
+            LOG(LOG_ERROR, "net_timeout(): \"%s\" is not a valid netTimeout value. Will use default %d second network timeout.\n", LOGEMPTY(val), NET_CONNECT_TIMEOUT);
+        } else {
+            LOG(LOG_DEBUG, "net_timeout(): using %s second network timeout.\n", LOGEMPTY(val));
+        }
+    }
+    if (val) free(val);
+    return t;
+}
+
+void validate_directory(const char *path) {
+    DWORD dwAttr = GetFileAttributes(path);
+    if (path == NULL || dwAttr == INVALID_FILE_ATTRIBUTES) {
+        fprintf(stdout, "   \"%s\" is not a valid directory name.\n", LOGEMPTY(path));
+        return;
+    }
+    if ((dwAttr & FILE_ATTRIBUTE_DIRECTORY)) {
+        if (dwAttr & FILE_ATTRIBUTE_READONLY) {
+            fprintf(stdout, "   \"%s\" has read only access permissions.\n", LOGEMPTY(path));
+            return;
+        } else {
+            fprintf(stdout, "   \"%s\" has read/write access permissions.\n", LOGEMPTY(path));
+            return;
+        }
+    }
+    fprintf(stdout, "   \"%s\" is not a directory.\n", LOGEMPTY(path));
+}
+
+void validate_pkcs12(const char * certf, const char * certp) {
+    HANDLE hfile = INVALID_HANDLE_VALUE;
+    HANDLE hsection = 0;
+    void* pfx = 0;
+    PCCERT_CONTEXT pContext = 0;
+    DWORD dwBufSize = 0;
+    CERT_PUBLIC_KEY_INFO* spki = NULL;
+    BYTE *blobBuf = NULL;
+    CRYPT_DATA_BLOB blob;
+    HCERTSTORE pfxStore = 0;
+
+    if ((hfile = CreateFileA(certf, FILE_READ_DATA, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) != INVALID_HANDLE_VALUE) {
+        if ((hsection = CreateFileMapping(hfile, 0, PAGE_READONLY, 0, 0, 0))) {
+            if ((pfx = MapViewOfFile(hsection, FILE_MAP_READ, 0, 0, 0))) {
+                blob.cbData = GetFileSize(hfile, 0);
+                blob.pbData = (BYTE*) pfx;
+                if (PFXIsPFXBlob(&blob)) {
+                    wchar_t *certp_w = utf8_decode(certp, NULL);
+                    if ((pfxStore = PFXImportCertStore(&blob, certp_w, CRYPT_MACHINE_KEYSET | CRYPT_EXPORTABLE))) {
+                        if ((pContext = CertEnumCertificatesInStore(pfxStore, pContext))) {
+                            spki = &pContext->pCertInfo->SubjectPublicKeyInfo;
+                            if (CryptDecodeObject(X509_ASN_ENCODING, RSA_CSP_PUBLICKEYBLOB,
+                                    spki->PublicKey.pbData, spki->PublicKey.cbData, 0, 0, &dwBufSize)) {
+                                if ((blobBuf = (BYTE *) calloc(1, dwBufSize)) != NULL) {
+                                    if (CryptDecodeObject(X509_ASN_ENCODING, RSA_CSP_PUBLICKEYBLOB,
+                                            spki->PublicKey.pbData, spki->PublicKey.cbData, 0, blobBuf, &dwBufSize)) {
+                                        fprintf(stdout, "   \"%s\" file is valid.\n", LOGEMPTY(certf));
+                                    }
+                                    free(blobBuf);
+                                }
+                            }
+                            CertFreeCertificateContext(pContext);
+                        } else {
+                            fprintf(stdout, "   \"%s\" couldn't enumerate keys/certificates.\n", LOGEMPTY(certf));
+                        }
+                        CertCloseStore(pfxStore, CERT_CLOSE_STORE_FORCE_FLAG);
+                    } else {
+                        fprintf(stdout, "   \"%s\" couldn't import key file. Invalid password ?\n", LOGEMPTY(certf));
+                    }
+                    if (certp_w != NULL) {
+                        free(certp_w);
+                    }
+                } else {
+                    fprintf(stdout, "   \"%s\" file is not of PKCS12 type.\n", LOGEMPTY(certf));
+                }
+                UnmapViewOfFile(pfx);
+            }
+            CloseHandle(hsection);
+        }
+        CloseHandle(hfile);
+    } else {
+        fprintf(stdout, "   \"%s\" file is not accessible.\n", LOGEMPTY(certf));
+    }
 }
