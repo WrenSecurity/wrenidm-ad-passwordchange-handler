@@ -418,12 +418,12 @@ static void validate_service(void *argv) {
     if (ISVALID(val)) {
         int v = strtol(val, NULL, 10);
         if (v <= 0 || errno == ERANGE) {
-            fprintf(stdout, "   \"%s\" is not a valid logSize entry. Will use default %d MB file size limit.\n", LOGEMPTY(val), MAX_FSIZE);
+            fprintf(stdout, "   \"%s\" is not a valid logSize entry. Will use default %d byte file size limit.\n", LOGEMPTY(val), MAX_FSIZE);
         } else {
             fprintf(stdout, "   \"%s\" is a valid logSize entry.\n", LOGEMPTY(val));
         }
     } else {
-        fprintf(stdout, "   \"\" is not a valid logSize entry. Will use default %d MB file size limit.\n", MAX_FSIZE);
+        fprintf(stdout, "   \"\" is not a valid logSize entry. Will use default %d byte file size limit.\n", MAX_FSIZE);
     }
     if (val != NULL) {
         free(val);
