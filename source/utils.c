@@ -815,25 +815,39 @@ unsigned int net_timeout() {
     return t;
 }
 
-void validate_directory(const char *path) {
+void validate_directory(const char *path, int *status) {
     DWORD dwAttr = GetFileAttributes(path);
     if (path == NULL || dwAttr == INVALID_FILE_ATTRIBUTES) {
-        fprintf(stdout, "   \"%s\" is not a valid directory name.\n", LOGEMPTY(path));
+        if (status != NULL) {
+            *status++;
+        } else {
+            fprintf(stdout, "   \"%s\" is not a valid directory name.\n", LOGEMPTY(path));
+        }
         return;
     }
     if ((dwAttr & FILE_ATTRIBUTE_DIRECTORY)) {
         if (dwAttr & FILE_ATTRIBUTE_READONLY) {
-            fprintf(stdout, "   \"%s\" has read only access permissions.\n", LOGEMPTY(path));
+            if (status != NULL) {
+                *status++;
+            } else {
+                fprintf(stdout, "   \"%s\" has read only access permissions.\n", LOGEMPTY(path));
+            }
             return;
         } else {
-            fprintf(stdout, "   \"%s\" has read/write access permissions.\n", LOGEMPTY(path));
+            if (status == NULL) {
+                fprintf(stdout, "   \"%s\" has read/write access permissions.\n", LOGEMPTY(path));
+            }
             return;
         }
     }
-    fprintf(stdout, "   \"%s\" is not a directory.\n", LOGEMPTY(path));
+    if (status != NULL) {
+        *status++;
+    } else {
+        fprintf(stdout, "   \"%s\" is not a directory.\n", LOGEMPTY(path));
+    }
 }
 
-void validate_pkcs12(const char * certf, const char * certp) {
+void validate_pkcs12(const char *certf, const char *certp, int *status) {
     HANDLE hfile = INVALID_HANDLE_VALUE;
     HANDLE hsection = 0;
     void* pfx = 0;
@@ -859,24 +873,38 @@ void validate_pkcs12(const char * certf, const char * certp) {
                                 if ((blobBuf = (BYTE *) calloc(1, dwBufSize)) != NULL) {
                                     if (CryptDecodeObject(X509_ASN_ENCODING, RSA_CSP_PUBLICKEYBLOB,
                                             spki->PublicKey.pbData, spki->PublicKey.cbData, 0, blobBuf, &dwBufSize)) {
-                                        fprintf(stdout, "   \"%s\" file is valid.\n", LOGEMPTY(certf));
+                                        if (status == NULL) {
+                                            fprintf(stdout, "   \"%s\" file is valid.\n", LOGEMPTY(certf));
+                                        }
                                     }
                                     free(blobBuf);
                                 }
                             }
                             CertFreeCertificateContext(pContext);
                         } else {
-                            fprintf(stdout, "   \"%s\" couldn't enumerate keys/certificates.\n", LOGEMPTY(certf));
+                            if (status != NULL) {
+                                *status++;
+                            } else {
+                                fprintf(stdout, "   \"%s\" couldn't enumerate keys/certificates.\n", LOGEMPTY(certf));
+                            }
                         }
                         CertCloseStore(pfxStore, CERT_CLOSE_STORE_FORCE_FLAG);
                     } else {
-                        fprintf(stdout, "   \"%s\" couldn't import key file. Invalid password ?\n", LOGEMPTY(certf));
+                        if (status != NULL) {
+                            *status++;
+                        } else {
+                            fprintf(stdout, "   \"%s\" couldn't import key file. Invalid password ?\n", LOGEMPTY(certf));
+                        }
                     }
                     if (certp_w != NULL) {
                         free(certp_w);
                     }
                 } else {
-                    fprintf(stdout, "   \"%s\" file is not of PKCS12 type.\n", LOGEMPTY(certf));
+                    if (status != NULL) {
+                        *status++;
+                    } else {
+                        fprintf(stdout, "   \"%s\" file is not of PKCS12 type.\n", LOGEMPTY(certf));
+                    }
                 }
                 UnmapViewOfFile(pfx);
             }
@@ -884,6 +912,10 @@ void validate_pkcs12(const char * certf, const char * certp) {
         }
         CloseHandle(hfile);
     } else {
-        fprintf(stdout, "   \"%s\" file is not accessible.\n", LOGEMPTY(certf));
+        if (status != NULL) {
+            *status++;
+        } else {
+            fprintf(stdout, "   \"%s\" file is not accessible.\n", LOGEMPTY(certf));
+        }
     }
 }

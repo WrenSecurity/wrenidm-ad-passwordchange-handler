@@ -198,7 +198,7 @@ void log_warning(void *, const char *format, ...);
 void log_error(void *, const char *format, ...);
 void log_debug(void *, const char *format, ...);
 
-void validate_directory(const char *path);
-void validate_pkcs12(const char * certf, const char * certp);
+void validate_directory(const char *path, int *status);
+void validate_pkcs12(const char *certf, const char *certp, int *status);
 
 #endif
