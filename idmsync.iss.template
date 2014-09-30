@@ -24,7 +24,7 @@
 
 #define IDMAppName "OpenIDM Password Sync"
 #define IDMAppVersion "@VERSION_S@"
-#define IDMAppPublisher "ForgeRock Inc."
+#define IDMAppPublisher "ForgeRock AS"
 #define IDMAppURL "http://www.forgerock.com/"
 
 [Setup]
@@ -117,6 +117,73 @@ var
   value: String;
   value0: String;
   value1: String;
+  LoadInfFilename, SaveInfFilename: String;
+
+function GetRegValue(Param: String): String;
+var
+  value: String;
+begin
+  if RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\ForgeRock\OpenIDM\PasswordSync') then
+  begin
+    RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\ForgeRock\OpenIDM\PasswordSync', Param, Value);
+    Result := Value;
+  end
+  else
+  begin
+    Result := '';
+  end;
+end;
+
+procedure UpdateInfFilenames();
+begin
+  LoadInfFilename := ExpandFileName(ExpandConstant('{param:loadinf}'));
+  SaveInfFilename := ExpandFileName(ExpandConstant('{param:saveinf}'));
+end;
+
+function ShouldLoadInf(): Boolean;
+begin
+  Result := (LoadInfFilename <> '');
+end;
+
+function ShouldSaveInf(): Boolean;
+begin
+  Result := (SaveInfFilename <> '');
+end;
+
+function LoadInfString(Section, Key, Default: String): String;
+begin
+  Result := GetIniString(Section, Key, Default, LoadInfFilename);
+end;
+
+procedure SaveInfString(Section, Key, Value: String);
+begin
+  SetIniString(Section, Key, Value, SaveInfFilename);
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  UpdateInfFilenames();
+  Result := True;
+end;
+
+procedure DeinitializeSetup();
+begin
+ if ShouldSaveInf() then begin
+    SaveInfString('Options', 'idmURL', GetRegValue('idmURL'));
+    SaveInfString('Options', 'passwordAttr', GetRegValue('passwordAttr'));
+    SaveInfString('Options', 'authType', GetRegValue('authType'));
+    SaveInfString('Options', 'authToken0', GetRegValue('authToken0'));
+    SaveInfString('Options', 'authToken1', GetRegValue('authToken1'));
+    SaveInfString('Options', 'dataPath', GetRegValue('dataPath'));
+    SaveInfString('Options', 'pollEach', GetRegValue('pollEach'));
+    SaveInfString('Options', 'logPath', GetRegValue('logPath'));
+    SaveInfString('Options', 'logLevel', GetRegValue('logLevel'));
+    SaveInfString('Options', 'certFile', GetRegValue('certFile'));
+    SaveInfString('Options', 'certPassword', GetRegValue('certPassword'));
+    SaveInfString('Options', 'keyAlias', GetRegValue('keyAlias'));
+    SaveInfString('Options', 'keyType', GetRegValue('keyType'));
+ end;
+end;
 
 procedure InitializeWizard;
 begin
@@ -236,15 +303,47 @@ begin
   LogDirPage.Add('');
   
   value := '';
+  if ShouldLoadInf() then begin
+    InputPageA.Values[0] := LoadInfString('Options', 'idmURL', 'https://localhost:8444/openidm/managed/user?_action=patch&_queryId=for-userName&uid=${samaccountname}');
+  end else begin
   if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'idmURL', value) or (value = '') then begin
 			InputPageA.Values[0] := 'https://localhost:8444/openidm/managed/user?_action=patch&_queryId=for-userName&uid=${samaccountname}';
 	end else InputPageA.Values[0] := value;
+  end;
+
   value := '';
+  if ShouldLoadInf() then begin
+    InputPageA.Values[1] := LoadInfString('Options', 'passwordAttr', 'adPassword');
+  end else begin
   if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'passwordAttr', value) or (value = '') then begin
 			InputPageA.Values[1] := 'adPassword';
 	end else InputPageA.Values[1] := value;
+  end;
   value := '';
 
+  if ShouldLoadInf() then begin
+    InputPageB.Values[0] := LoadInfString('Options', 'authToken0', '');
+    InputPageB.Values[1] := LoadInfString('Options', 'authToken1', '');
+    value := LoadInfString('Options', 'authType', '');
+    if (value = 'basic') then begin
+       AuthType.ItemIndex := 1;
+    end else if (value = 'idm') then begin
+       AuthType.ItemIndex := 2;
+    end else if (value = 'cert') then begin
+       InputPageB.Values[0] := '';
+       InputPageB.Values[1] := '';
+       AuthType.ItemIndex := 3;
+       CertFilePageA.Values[0] := LoadInfString('Options', 'authToken0', '');
+       CertPassA.Text := LoadInfString('Options', 'authToken1', '');
+    end else begin
+       InputPageB.Values[0] := '';
+       InputPageB.Values[1] := '';
+       AuthType.ItemIndex := 0;
+       CertFilePageA.Values[0] := '';
+       CertPassA.Text := '';
+    end
+    value := '';
+  end else begin
   RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authType', value);
   if (value = 'basic') then begin
       RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authToken0', value0);
@@ -273,37 +372,67 @@ begin
       CertFilePageA.Values[0] := '';
       CertPassA.Text := '';
   end
+  end;
   value0 := '';
   value1 := '';
   value := '';
 
+  if ShouldLoadInf() then begin
+    CertFilePage.Values[0] := LoadInfString('Options', 'certFile', '');
+  end else begin
   if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'certFile', value) or (value = '') then begin
 			CertFilePage.Values[0] := '';
 	end else CertFilePage.Values[0] := value;
+  end;
   value := '';
+  if ShouldLoadInf() then begin
+    CertPassE.Text := LoadInfString('Options', 'certPassword', '');
+  end else begin
   if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'certPassword', value) or (value = '') then begin
 			CertPassE.Text := '';
 	end else CertPassE.Text := value;
+  end;
   value := '';
+  if ShouldLoadInf() then begin
+    CertAlias.Text := LoadInfString('Options', 'keyAlias', '');
+  end else begin
   if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'keyAlias', value) or (value = '') then begin
 			CertAlias.Text := 'openidm-cert';
 	end else CertAlias.Text := value;
+  end;
   value := '';
   
+  if ShouldLoadInf() then begin
+    DataDirPage.Values[0] := LoadInfString('Options', 'dataPath', '');
+  end else begin
   if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'dataPath', value) or (value = '') then begin
 			DataDirPage.Values[0] := '';
 	end else DataDirPage.Values[0] := value;
+  end;
   value := '';
+
+  if ShouldLoadInf() then begin
+    Poll.Text := LoadInfString('Options', 'pollEach', '');
+  end else begin
   if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'pollEach', value) or (value = '') then begin
 			Poll.Text := '';
 	end else Poll.Text := value;
+  end;
   value := '';
 
+  if ShouldLoadInf() then begin
+    LogDirPage.Values[0] := LoadInfString('Options', 'logPath', '');
+  end else begin
   if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'logPath', value) then begin
 			LogDirPage.Values[0] := '';
 	end else LogDirPage.Values[0] := value;
+  end;
   value := '';
-  RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'logLevel', value);
+  if ShouldLoadInf() then begin
+    value := LoadInfString('Options', 'logLevel', 'error');
+  end else begin
+    RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'logLevel', value);
+  end;
   if (value = 'error') then begin
       LogType.ItemIndex := 0;
   end else if (value = 'info') then begin
@@ -318,7 +447,12 @@ begin
       LogType.ItemIndex := 0;
   end
   value := '';
-  RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'keyType', value);
+
+  if ShouldLoadInf() then begin
+    value := LoadInfString('Options', 'keyType', 'aes128');
+  end else begin
+    RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'keyType', value);
+  end;
   if (value = 'aes128') then begin
       KeyType.ItemIndex := 0;
   end else if (value = 'aes192') then begin
