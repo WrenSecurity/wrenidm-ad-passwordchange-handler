@@ -20,9 +20,10 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 
 #define VERSION "@VERSION_S@"
 #define VERSION_NUMBER @VERSION_N@
-#define VERSION_SVN "@SVN_REVISION@"
-#define USERAGENT "OpenIDM AD Sync/"VERSION
+#define VERSION_GIT "@GIT_REVISION@"
+#define USERAGENT "WrenIDM AD Sync/"VERSION

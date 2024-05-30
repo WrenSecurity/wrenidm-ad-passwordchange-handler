@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 
 #include <stdio.h>
@@ -65,7 +66,7 @@ static void rotate_log(HANDLE file) {
             SetFilePointer(file, 0, NULL, FILE_BEGIN);
             SetEndOfFile(file);
         } else {
-            DEBUG("could not copy OpenIDM log file, error: %d", GetLastError());
+            DEBUG("could not copy WrenIDM log file, error: %d", GetLastError());
         }
     }
 }
@@ -202,7 +203,7 @@ DWORD WINAPI log_worker(void * p) {
                     if ((pos = SetFilePointer(file, 0, NULL, FILE_END)) != INVALID_SET_FILE_POINTER) {
                         if (LockFile(file, pos, 0, msg_size, 0)) {
                             if (!WriteFile(file, (LPVOID) msg, msg_size, &written, NULL)) {
-                                //DEBUG("OpenIDM log file write failed, error: %d", GetLastError());
+                                //DEBUG("WrenIDM log file write failed, error: %d", GetLastError());
                             }
                             FlushFileBuffers(file);
                             UnlockFile(file, pos, 0, msg_size, 0);
@@ -227,7 +228,7 @@ DWORD WINAPI log_worker(void * p) {
                 qlms = NULL;
             }
         } else {
-            DEBUG("OpenIDM log create mutex failed, error: %d", GetLastError());
+            DEBUG("WrenIDM log create mutex failed, error: %d", GetLastError());
         }
     }
     if (file != INVALID_HANDLE_VALUE) {

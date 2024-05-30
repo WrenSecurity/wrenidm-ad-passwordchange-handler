@@ -20,12 +20,13 @@
 ; with the fields enclosed by brackets [] replaced by
 ; your own identifying information:
 ; "Portions Copyrighted [2012] [ForgeRock AS]"
+; "Portions Copyrighted [2024] [Wren Security]"
 ;
 
-#define IDMAppName "OpenIDM Password Sync"
-#define IDMAppVersion "@VERSION_S@"
-#define IDMAppPublisher "ForgeRock AS"
-#define IDMAppURL "http://www.forgerock.com/"
+#define IDMAppName "WrenIDM Password Sync"
+#define IDMAppVersion "1.1.0"
+#define IDMAppPublisher "Wren Security"
+#define IDMAppURL "https://wrensecurity.org"
 
 [Setup]
 AppId={{7D1925B1-E009-4417-ABB4-CD427ABA49F7}
@@ -36,12 +37,12 @@ AppPublisher={#IDMAppPublisher}
 AppPublisherURL={#IDMAppURL}
 AppSupportURL={#IDMAppURL}
 AppUpdatesURL={#IDMAppURL}
-DefaultDirName={pf}\{#IDMAppName}
+DefaultDirName={commonpf}\{#IDMAppName}
 DefaultGroupName={#IDMAppName}
 DisableProgramGroupPage=yes
 LicenseFile=.\legal-notices\license.txt
 OutputDir=.\out\
-OutputBaseFilename=setup
+OutputBaseFilename=idmsync-setup
 Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=admin
@@ -49,10 +50,11 @@ ArchitecturesInstallIn64BitMode=x64
 AlwaysRestart=yes
 UninstallRestartComputer=yes
 Uninstallable=yes
-MinVersion=0,5.2.3790
+MinVersion=6.2.9200
+WizardSmallImageFile=wizard/wren.bmp
 
 [Messages]
-WinVersionTooLowError=This program requires Windows 2003R2 or later.
+WinVersionTooLowError=This program requires Windows Server 2012 or later.
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -65,27 +67,27 @@ Source: ".\out\32\idmsync.exe"; DestDir: "{app}"; DestName: "idmsync.exe"; Flags
 Source: ".\legal-notices\*"; DestDir: "{app}\legal-notices"; Flags: replacesameversion restartreplace uninsrestartdelete;
 
 [Run]
-Filename: "{app}\idmsync.exe"; Parameters: "--install"; StatusMsg: "Installing OpenIDM Service..."
+Filename: "{app}\idmsync.exe"; Parameters: "--install"; StatusMsg: "Installing Wren:IDM Service..."
 
 [UninstallRun]
-Filename: "{app}\idmsync.exe"; Parameters: "--remove"; StatusMsg: "Removing OpenIDM Service..."
+Filename: "{app}\idmsync.exe"; Parameters: "--remove"; StatusMsg: "Removing Wren:IDM Service..."
 
 [Registry]
-Root: HKLM; Subkey: "Software\ForgeRock"; Flags: uninsdeletekeyifempty
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM"; Flags: uninsdeletekeyifempty
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "idmURL"; ValueData: "{code:GetOption|idmURL}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "passwordAttr"; ValueData: "{code:GetOption|passwordAttr}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "authType"; ValueData: "{code:GetOption|authType}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "authToken0"; ValueData: "{code:GetOption|authToken0}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "authToken1"; ValueData: "{code:GetOption|authToken1}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "dataPath"; ValueData: "{code:GetXmlDir}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "pollEach"; ValueData: "{code:GetOption|pollEach}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "logPath"; ValueData: "{code:GetLogDir}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "logLevel"; ValueData: "{code:GetOption|logLevel}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "certFile"; ValueData: "{code:GetOption|certFile}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "certPassword"; ValueData: "{code:GetOption|certPassword}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "keyAlias"; ValueData: "{code:GetOption|keyAlias}"
-Root: HKLM; Subkey: "Software\ForgeRock\OpenIDM\PasswordSync"; ValueType: string; ValueName: "keyType"; ValueData: "{code:GetOption|keyType}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity"; Flags: uninsdeletekeyifempty
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM"; Flags: uninsdeletekeyifempty
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "idmURL"; ValueData: "{code:GetOption|idmURL}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "passwordAttr"; ValueData: "{code:GetOption|passwordAttr}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "authType"; ValueData: "{code:GetOption|authType}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "authToken0"; ValueData: "{code:GetOption|authToken0}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "authToken1"; ValueData: "{code:GetOption|authToken1}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "dataPath"; ValueData: "{code:GetXmlDir}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "pollEach"; ValueData: "{code:GetOption|pollEach}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "logPath"; ValueData: "{code:GetLogDir}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "logLevel"; ValueData: "{code:GetOption|logLevel}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "certFile"; ValueData: "{code:GetOption|certFile}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "certPassword"; ValueData: "{code:GetOption|certPassword}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "keyAlias"; ValueData: "{code:GetOption|keyAlias}"
+Root: HKLM; Subkey: "SOFTWARE\WrenSecurity\WrenIDM\PasswordSync"; ValueType: string; ValueName: "keyType"; ValueData: "{code:GetOption|keyType}"
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Lsa"; ValueType: multisz; ValueName: "Notification Packages"; ValueData: "{olddata}{break}idmsync"; Check: NeedsAddDll('idmsync')
 
 [Dirs]
@@ -123,9 +125,9 @@ function GetRegValue(Param: String): String;
 var
   value: String;
 begin
-  if RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\ForgeRock\OpenIDM\PasswordSync') then
+  if RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync') then
   begin
-    RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\ForgeRock\OpenIDM\PasswordSync', Param, Value);
+    RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', Param, Value);
     Result := Value;
   end
   else
@@ -188,15 +190,15 @@ end;
 procedure InitializeWizard;
 begin
   InputPageA := CreateInputQueryPage(wpLicense,
-    'OpenIDM Information', 'Connection',
-    'Please specify OpenIDM server deployment URL and request template information, then click Next.');
-  InputPageA.Add('OpenIDM URL:', False);
-  InputPageA.Add('OpenIDM User Password attribute:', False);
+    'Wren:IDM Information', 'Connection',
+    'Please specify Wren:IDM server deployment URL and request template information, then click Next.');
+  InputPageA.Add('Wren:IDM URL:', False);
+  InputPageA.Add('Wren:IDM User Password attribute:', False);
 
   InputPageB := CreateInputQueryPage(InputPageA.ID,
-    'OpenIDM Information', 'Authentication',
-    'Please specify OpenIDM authentication parameters, then click Next.');
-  InputPageB.Add('User name:', False);
+    'Wren:IDM Information', 'Authentication',
+    'Please specify Wren:IDM authentication parameters, then click Next.');
+  InputPageB.Add('Username:', False);
   InputPageB.Add('Password:', True);
   AuthTypeLabel := TNewStaticText.Create(InputPageB);
   AuthTypeLabel.Top := 130;
@@ -204,18 +206,18 @@ begin
   AuthTypeLabel.AutoSize := True;
   AuthTypeLabel.Parent := InputPageB.Surface;
   AuthType := TComboBox.Create(InputPageB);
-  AuthType.Top := 145; 
+  AuthType.Top := 145;
   AuthType.Width := InputPageB.SurfaceWidth;
   AuthType.Parent := InputPageB.Surface;
   AuthType.Style := csDropDownList;
   AuthType.Items.Add('None');
   AuthType.Items.Add('HTTP Basic');
-  AuthType.Items.Add('OpenIDM Header');
+  AuthType.Items.Add('Wren:IDM Header');
   AuthType.Items.Add('Certificate');
   AuthType.ItemIndex := 0;
 
   CertFilePageA := CreateInputFilePage(InputPageB.ID,
-    'OpenIDM Information', 'Certificate authentication',
+    'Wren:IDM Information', 'Certificate authentication',
     'Select Certificate file (PKCS12 format) which will be used for authentication, then click Next.');
   CertFilePageA.Add('','Certificate files|*.pfx|All files|*.*','.pfx');
   CertPassLabelA := TNewStaticText.Create(CertFilePageA);
@@ -256,7 +258,7 @@ begin
   KeyTypeLabel.AutoSize := True;
   KeyTypeLabel.Parent := CertFilePage.Surface;
   KeyType := TComboBox.Create(CertFilePage);
-  KeyType.Top := 175; 
+  KeyType.Top := 175;
   KeyType.Width := CertFilePage.SurfaceWidth;
   KeyType.Parent := CertFilePage.Surface;
   KeyType.Style := csDropDownList;
@@ -264,7 +266,7 @@ begin
   KeyType.Items.Add('aes192');
   KeyType.Items.Add('aes256');
   KeyType.ItemIndex := 0;
-    
+
   DataDirPage := CreateInputDirPage(CertFilePage.ID,
     'Data Storage', 'Where should Service output data files be stored?',
     'Select the folder in which Service will store its output data files, then click Next.',
@@ -290,7 +292,7 @@ begin
   LogTypeLabel.AutoSize := True;
   LogTypeLabel.Parent := LogDirPage.Surface;
   LogType := TComboBox.Create(LogDirPage);
-  LogType.Top := 85; 
+  LogType.Top := 85;
   LogType.Width := LogDirPage.SurfaceWidth;
   LogType.Parent := LogDirPage.Surface;
   LogType.Style := csDropDownList;
@@ -301,12 +303,12 @@ begin
   LogType.Items.Add('debug');
   LogType.ItemIndex := 0;
   LogDirPage.Add('');
-  
+
   value := '';
   if ShouldLoadInf() then begin
     InputPageA.Values[0] := LoadInfString('Options', 'idmURL', 'https://localhost:8444/openidm/managed/user?_action=patch&_queryId=for-userName&uid=${samaccountname}');
   end else begin
-  if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'idmURL', value) or (value = '') then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'idmURL', value) or (value = '') then begin
 			InputPageA.Values[0] := 'https://localhost:8444/openidm/managed/user?_action=patch&_queryId=for-userName&uid=${samaccountname}';
 	end else InputPageA.Values[0] := value;
   end;
@@ -315,7 +317,7 @@ begin
   if ShouldLoadInf() then begin
     InputPageA.Values[1] := LoadInfString('Options', 'passwordAttr', 'adPassword');
   end else begin
-  if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'passwordAttr', value) or (value = '') then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'passwordAttr', value) or (value = '') then begin
 			InputPageA.Values[1] := 'adPassword';
 	end else InputPageA.Values[1] := value;
   end;
@@ -341,25 +343,25 @@ begin
        AuthType.ItemIndex := 0;
        CertFilePageA.Values[0] := '';
        CertPassA.Text := '';
-    end
+    end;
     value := '';
   end else begin
-  RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authType', value);
+  RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'authType', value);
   if (value = 'basic') then begin
-      RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authToken0', value0);
-      RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authToken1', value1);
+      RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'authToken0', value0);
+      RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'authToken1', value1);
       InputPageB.Values[0] := value0;
       InputPageB.Values[1] := value1;
       AuthType.ItemIndex := 1;
   end else if (value = 'idm') then begin
-      RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authToken0', value0);
-      RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authToken1', value1);
+      RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'authToken0', value0);
+      RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'authToken1', value1);
       InputPageB.Values[0] := value0;
       InputPageB.Values[1] := value1;
       AuthType.ItemIndex := 2;
   end else if (value = 'cert') then begin
-      RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authToken0', value0);
-      RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'authToken1', value1);
+      RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'authToken0', value0);
+      RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'authToken1', value1);
       InputPageB.Values[0] := '';
       InputPageB.Values[1] := '';
       AuthType.ItemIndex := 3;
@@ -380,7 +382,7 @@ begin
   if ShouldLoadInf() then begin
     CertFilePage.Values[0] := LoadInfString('Options', 'certFile', '');
   end else begin
-  if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'certFile', value) or (value = '') then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'certFile', value) or (value = '') then begin
 			CertFilePage.Values[0] := '';
 	end else CertFilePage.Values[0] := value;
   end;
@@ -388,7 +390,7 @@ begin
   if ShouldLoadInf() then begin
     CertPassE.Text := LoadInfString('Options', 'certPassword', '');
   end else begin
-  if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'certPassword', value) or (value = '') then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'certPassword', value) or (value = '') then begin
 			CertPassE.Text := '';
 	end else CertPassE.Text := value;
   end;
@@ -396,16 +398,16 @@ begin
   if ShouldLoadInf() then begin
     CertAlias.Text := LoadInfString('Options', 'keyAlias', '');
   end else begin
-  if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'keyAlias', value) or (value = '') then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'keyAlias', value) or (value = '') then begin
 			CertAlias.Text := 'openidm-cert';
 	end else CertAlias.Text := value;
   end;
   value := '';
-  
+
   if ShouldLoadInf() then begin
     DataDirPage.Values[0] := LoadInfString('Options', 'dataPath', '');
   end else begin
-  if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'dataPath', value) or (value = '') then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'dataPath', value) or (value = '') then begin
 			DataDirPage.Values[0] := '';
 	end else DataDirPage.Values[0] := value;
   end;
@@ -414,7 +416,7 @@ begin
   if ShouldLoadInf() then begin
     Poll.Text := LoadInfString('Options', 'pollEach', '');
   end else begin
-  if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'pollEach', value) or (value = '') then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'pollEach', value) or (value = '') then begin
 			Poll.Text := '';
 	end else Poll.Text := value;
   end;
@@ -423,7 +425,7 @@ begin
   if ShouldLoadInf() then begin
     LogDirPage.Values[0] := LoadInfString('Options', 'logPath', '');
   end else begin
-  if not RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'logPath', value) then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'logPath', value) then begin
 			LogDirPage.Values[0] := '';
 	end else LogDirPage.Values[0] := value;
   end;
@@ -431,7 +433,7 @@ begin
   if ShouldLoadInf() then begin
     value := LoadInfString('Options', 'logLevel', 'error');
   end else begin
-    RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'logLevel', value);
+    RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'logLevel', value);
   end;
   if (value = 'error') then begin
       LogType.ItemIndex := 0;
@@ -445,13 +447,13 @@ begin
       LogType.ItemIndex := 4;
   end else begin
       LogType.ItemIndex := 0;
-  end
+  end;
   value := '';
 
   if ShouldLoadInf() then begin
     value := LoadInfString('Options', 'keyType', 'aes128');
   end else begin
-    RegQueryStringValue(HKLM, 'Software\ForgeRock\OpenIDM\PasswordSync', 'keyType', value);
+    RegQueryStringValue(HKLM, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', 'keyType', value);
   end;
   if (value = 'aes128') then begin
       KeyType.ItemIndex := 0;
@@ -461,7 +463,7 @@ begin
       KeyType.ItemIndex := 2;
   end else begin
       KeyType.ItemIndex := 0;
-  end
+  end;
   value := '';
 
 end;
@@ -564,7 +566,7 @@ begin
      end;
    end else begin
      MsgBox('Error locating "idmsync" in "HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Notification Packages" registry entry', mbError, MB_OK);
-   end; 
+   end;
   end;
    Result := True;
 end;
@@ -573,11 +575,11 @@ function fixPath(KeyName: String): Boolean;
 var
   OrigVal: string;
 begin
-  if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\ForgeRock\OpenIDM\PasswordSync', KeyName, OrigVal)
+  if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', KeyName, OrigVal)
   then begin
    if StringChangeEx(OrigVal, '\', '/', True) > 0 then begin
-     RegWriteStringValue(HKEY_LOCAL_MACHINE, 'Software\ForgeRock\OpenIDM\PasswordSync', KeyName, OrigVal);
-   end; 
+     RegWriteStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\WrenSecurity\WrenIDM\PasswordSync', KeyName, OrigVal);
+   end;
   end;
    Result := True;
 end;
@@ -592,19 +594,19 @@ begin
         fixPath('authToken0');
      end;
   end;
-end; 
+end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usUninstall then begin
     if not NeedsAddDll('idmsync') then begin
-       fixDllEntry(); 
+       fixDllEntry();
     end;
   end;
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
-begin          
+begin
   Result := (PageID = CertFilePageA.ID) and (AuthType.ItemIndex < 3);
 end;
 
@@ -612,13 +614,13 @@ function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   if CurPageID = InputPageA.ID then begin
     if InputPageA.Values[0] = '' then begin
-      MsgBox('You must enter valid OpenIDM URL.', mbError, MB_OK);
+      MsgBox('You must enter valid Wren:IDM URL.', mbError, MB_OK);
       Result := False;
     end else begin
       Result := True;
     end;
     if InputPageA.Values[1] = '' then begin
-      MsgBox('You must enter valid OpenIDM User Password attribute value.', mbError, MB_OK);
+      MsgBox('You must enter valid Wren:IDM User Password attribute value.', mbError, MB_OK);
       Result := False;
     end else begin
       Result := True;
@@ -626,7 +628,7 @@ begin
   end else if CurPageID = InputPageB.ID then begin
     if (AuthType.ItemIndex = 1) or (AuthType.ItemIndex = 2) then begin
        if InputPageB.Values[0] = '' then begin
-         MsgBox('You must enter user name.', mbError, MB_OK);
+         MsgBox('You must enter username.', mbError, MB_OK);
          Result := False;
        end else begin
          Result := True;

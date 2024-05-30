@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 
 #include <windows.h>
@@ -30,23 +31,23 @@ FILEVERSION VERSION_NUMBER
 PRODUCTVERSION VERSION_NUMBER
 FILEOS VOS__WINDOWS32
 FILETYPE VFT_APP
-BEGIN     
-BLOCK "StringFileInfo"     
-BEGIN        
-BLOCK "00000000"         
-BEGIN             
-VALUE "CompanyName", "ForgeRock AS (http://forgerock.com/)" "\000"             
-VALUE "FileDescription", "OpenIDM Password Sync Service" "\000"             
-VALUE "FileVersion", VERSION "\000"             
-VALUE "LegalCopyright", "ForgeRock AS" "\000"             
-VALUE "OriginalFilename", "idmsync.exe" "\000"             
-VALUE "ProductName", "OpenIDM Password Sync Service" "\000"             
-VALUE "ProductVersion", VERSION "\000"             
-VALUE "Comments", "OpenIDM Password Sync is a password synchronizer designed to synchronize Windows passwords with OpenIDM" "\000"         
-END     
-END      
-BLOCK "VarFileInfo"     
-BEGIN         
-VALUE "Translation", 0x0000 0x0000     
-END 
+BEGIN
+BLOCK "StringFileInfo"
+BEGIN
+BLOCK "00000000"
+BEGIN
+VALUE "CompanyName", "Wren Security (https://wrensecurity.org)" "\000"
+VALUE "FileDescription", "WrenIDM Password Sync Service" "\000"
+VALUE "FileVersion", VERSION "\000"
+VALUE "LegalCopyright", "Wren Security" "\000"
+VALUE "OriginalFilename", "idmsync.exe" "\000"
+VALUE "ProductName", "WrenIDM Password Sync Service" "\000"
+VALUE "ProductVersion", VERSION "\000"
+VALUE "Comments", "WrenIDM Password Sync is a password synchronizer designed to synchronize Windows passwords with WrenIDM" "\000"
+END
+END
+BLOCK "VarFileInfo"
+BEGIN
+VALUE "Translation", 0x0000 0x0000
+END
 END

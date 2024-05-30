@@ -1,0 +1,5 @@
+# Ignore build-related files
+out
+idmsync.iss
+legal-notices/license.txt
+include/version.h

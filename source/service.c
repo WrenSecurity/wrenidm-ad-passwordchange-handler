@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 
 #define WIN32_LEAN_AND_MEAN
@@ -43,7 +44,7 @@ static HANDLE hthr_event;
 static HANDLE hkill_event;
 volatile BOOL file_worker_running = FALSE;
 
-#define SERVICE_NAME "OpenIDM Password Sync"
+#define SERVICE_NAME "WrenIDM Password Sync"
 #define SERVICE_DESCR SERVICE_NAME " Service"
 #define LOGHEAD "service init\r\n\r\n\t#######################################\r\n\t# %-36s#\r\n\t# Version: %-27s#\r\n\t# Revision: %-26s#\r\n\t# Build date: %s %-12s#\r\n\t#######################################\r\n"
 
@@ -375,7 +376,7 @@ static void install_service(void *argv) {
         return;
     }
 
-    sdesc.lpDescription = "This service provides secure password synchronization between Active Directory and OpenIDM";
+    sdesc.lpDescription = "This service provides secure password synchronization between Active Directory and WrenIDM";
     if (!ChangeServiceConfig2A(svc, SERVICE_CONFIG_DESCRIPTION, &sdesc)) {
         show_windows_error(GetLastError());
         CloseServiceHandle(svc);
@@ -391,7 +392,7 @@ static void install_service(void *argv) {
 static void version_service(void *argv) {
     fprintf(stdout, "\n%s\n", SERVICE_DESCR);
     fprintf(stdout, " Version: %s\n", VERSION);
-    fprintf(stdout, " Revision: %s\n", VERSION_SVN);
+    fprintf(stdout, " Revision: %s\n", VERSION_GIT);
     fprintf(stdout, " Build date: %s %s\n\n", __DATE__, __TIME__);
 }
 
@@ -493,7 +494,7 @@ static void validate_service(int *argv) {
         val = NULL;
     }
     if (argv == NULL) {
-        fprintf(stdout, "\nOpenIDM service parameters:\nidmURL:\n");
+        fprintf(stdout, "\nWrenIDM service parameters:\nidmURL:\n");
     }
     read_registry_key("idmURL", &val);
     if (validate_url(val)) {
@@ -552,11 +553,11 @@ static void validate_service(int *argv) {
     read_registry_key("idm2Only", &val);
     if (ISVALID(val)) {
         if (argv == NULL) {
-            fprintf(stdout, "   Service is configured to run in OpenIDM 2.x compatibility mode.\n");
+            fprintf(stdout, "   Service is configured to run in WrenIDM 2.x compatibility mode.\n");
         }
     } else {
         if (argv == NULL) {
-            fprintf(stdout, "   Service is configured to run with OpenIDM version 3.x or newer.\n");
+            fprintf(stdout, "   Service is configured to run with WrenIDM version 3.x or newer.\n");
         }
     }
     if (val != NULL) {
@@ -929,7 +930,7 @@ void WINAPI ServiceMain(DWORD argc, LPSTR* argv) {
         return;
     }
 
-    LOG(LOG_ALWAYS, LOGHEAD, SERVICE_DESCR, TEXT(VERSION), VERSION_SVN, TEXT(__DATE__), TEXT(__TIME__));
+    LOG(LOG_ALWAYS, LOGHEAD, SERVICE_DESCR, TEXT(VERSION), VERSION_GIT, TEXT(__DATE__), TEXT(__TIME__));
 
     ssts.dwCurrentState = SERVICE_RUNNING;
     SetServiceStatus(hssts, &ssts);
