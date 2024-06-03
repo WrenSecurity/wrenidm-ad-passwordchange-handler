@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 
 #ifndef __UTILS_H__
@@ -77,7 +78,7 @@
 
 #define MAX_FSIZE 5120000 /* 5MB */
 
-#define IDM_REG_SUBKEY "SOFTWARE\\ForgeRock\\OpenIDM\\PasswordSync"
+#define IDM_REG_SUBKEY "SOFTWARE\\WrenSecurity\\WrenIDM\\PasswordSync"
 
 #define DEBUG(fmt, ...)                 _DEBUG_(fmt, __VA_ARGS__)
 

@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 
 #define WIN32_LEAN_AND_MEAN
@@ -257,7 +258,7 @@ BOOLEAN __stdcall InitializeChangeNotify(void) {
                 queue_delete(log_handle);
                 log_handle = NULL;
             }
-            LOG(LOG_ALWAYS, LOGHEAD, "OpenIDM Password Sync", VERSION, VERSION_SVN, __DATE__, __TIME__);
+            LOG(LOG_ALWAYS, LOGHEAD, "WrenIDM Password Sync", VERSION, VERSION_GIT, __DATE__, __TIME__);
             free(log_dir);
             net_init();
         }

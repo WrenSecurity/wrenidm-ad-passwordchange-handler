@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 
 #define WIN32_LEAN_AND_MEAN
@@ -33,7 +34,7 @@
 #include <time.h>
 #include <io.h>
 #include <errno.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include "utils.h"
 #include "network.h"
 #include "log.h"
@@ -792,7 +793,7 @@ const char *json_payload_type() {
     int version = 1;
     char *ver = NULL;
     if (read_registry_key("idm2Only", &ver) && ISVALID(ver)) {
-        LOG(LOG_DEBUG, "json_payload_type(): using OpenIDM 2.x compatible data type");
+        LOG(LOG_DEBUG, "json_payload_type(): using WrenIDM 2.x compatible data type");
         version = 0;
     }
     if (ver) free(ver);
