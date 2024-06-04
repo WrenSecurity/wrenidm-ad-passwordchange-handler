@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2014] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 #ifndef __NETWORK_H__
 #define __NETWORK_H__
@@ -39,11 +40,8 @@ typedef enum {
 } AUTH_TYPE;
 
 enum {
-    SSLv3 = 1 << 0,
-    TLSv1 = 1 << 1,
-    TLSv11 = 1 << 2,
-    TLSv12 = 1 << 3,
-    SSL_VERSION_MASKS = 1 << 4
+    TLSv12 = 1 << 0,
+    TLSv13 = 1 << 1
 };
 
 typedef SSIZE_T ssize_t;
