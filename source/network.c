@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2014] [ForgeRock AS]"
+ * "Portions Copyrighted [2024] [Wren Security]"
  **/
 #define WIN32_LEAN_AND_MEAN
 #define _WIN32_WINNT 0x0502
@@ -588,14 +589,10 @@ static int net_ssl_init_creds(net_t *c) {
         }
     }
 
-    if (c->ssl.version & SSLv3)
-        schannel_cred.grbitEnabledProtocols |= SP_PROT_SSL3_CLIENT;
-    if (c->ssl.version & TLSv1)
-        schannel_cred.grbitEnabledProtocols |= SP_PROT_TLS1_CLIENT;
-    if (c->ssl.version & TLSv11)
-        schannel_cred.grbitEnabledProtocols |= SP_PROT_TLS1_1_CLIENT;
     if (c->ssl.version & TLSv12)
         schannel_cred.grbitEnabledProtocols |= SP_PROT_TLS1_2_CLIENT;
+    if (c->ssl.version & TLSv13)
+        schannel_cred.grbitEnabledProtocols |= SP_PROT_TLS1_3_CLIENT;
 
     schannel_cred.dwFlags |= SCH_CRED_NO_DEFAULT_CREDS |
             SCH_CRED_MANUAL_CRED_VALIDATION |
@@ -1333,13 +1330,13 @@ net_t * net_connect_url(const char *url, const char *cfile, const char *cpass, u
                 net_connect_int(n);
                 if (n->sock != INVALID_SOCKET) {
                     if (n->url.ssl) {
-                        n->ssl.version = SSLv3 | TLSv1;
+                        n->ssl.version = TLSv13 | TLSv12;
                         n->ssl.verifypeer = 0;
                         /* CertGetCertificateChain could be slow when this is set to 1.
-                         *  Edit the “Certificate Path Validation Settings” in the group policy editor: 
+                         *  Edit the “Certificate Path Validation Settings” in the group policy editor:
                          *  Computer Configuration → Windows Settings → Public Key Policies → Certificate Path Validation Settings
-                         *  Change the timeout values to 5 seconds each like this: Default URL retrieval timeout (in seconds) = 5 
-                         *  Default path validation cumulative retrieval timeout (in seconds) = 5 
+                         *  Change the timeout values to 5 seconds each like this: Default URL retrieval timeout (in seconds) = 5
+                         *  Default path validation cumulative retrieval timeout (in seconds) = 5
                          */
                         n->ssl.cfile = (char *) cfile;
                         n->ssl.cpass = (char *) cpass;
