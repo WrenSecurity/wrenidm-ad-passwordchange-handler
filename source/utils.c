@@ -20,7 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
- * "Portions Copyrighted [2024] [Wren Security]"
+ * "Portions Copyrighted [2024-2025] [Wren Security]"
  **/
 
 #define WIN32_LEAN_AND_MEAN
@@ -115,6 +115,30 @@ char * base64_encode(const char *input, size_t length, size_t *outlen) {
         }
     }
     return tmp;
+}
+
+char * json_encode(const char *input, size_t length, size_t *outlen) {
+    char *output = NULL;
+    size_t size = 2 /* quotes */ + 1 /* null terminator */, offset;
+    char *pWrite;
+    for (offset = 0; offset < length; offset++) {
+        size += input[offset] == '"' || input[offset] == '\\' ? 2 : 1;
+    }
+    if (outlen) *outlen = 0;
+    if ((output = malloc(size)) != NULL) {
+        pWrite = output + 1;
+        for (offset = 0; offset < length; offset++) {
+            if (input[offset] == '"' || input[offset] == '\\') {
+                *pWrite++ = '\\';
+            }
+            *pWrite++ = input[offset];
+        }
+        output[0] = '"';
+        output[size - 2] = '"';
+        output[size - 1] = 0;
+        if (outlen) *outlen = size - 1;
+    }
+    return output;
 }
 
 #if (_MSC_VER < 1800)

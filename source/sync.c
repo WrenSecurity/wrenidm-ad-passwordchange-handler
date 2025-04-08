@@ -20,7 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
- * "Portions Copyrighted [2024] [Wren Security]"
+ * "Portions Copyrighted [2024-2025] [Wren Security]"
  **/
 
 #define WIN32_LEAN_AND_MEAN
@@ -268,6 +268,7 @@ BOOLEAN __stdcall InitializeChangeNotify(void) {
 
 NTSTATUS __stdcall PasswordChangeNotify(PUNICODE_STRING username, ULONG relativeId, PUNICODE_STRING newpassword) {
     size_t len;
+    LPSTR pszTmp;
     BOOL status = FALSE;
     PWCHANGE_CONTEXT *ctx = NULL;
     if (username && newpassword) {
@@ -283,12 +284,11 @@ NTSTATUS __stdcall PasswordChangeNotify(PUNICODE_STRING username, ULONG relative
             }
             len = WideCharToMultiByte(CP_UTF8, 0, newpassword->Buffer, newpassword->Length / sizeof (wchar_t), NULL, 0, NULL, NULL);
             if (len > 0) {
-                ctx->password = (char *) malloc(len + 3);
-                ctx->password[0] = '"';
-                WideCharToMultiByte(CP_UTF8, 0, newpassword->Buffer, newpassword->Length / sizeof (wchar_t), ctx->password + 1, (DWORD) len, NULL, NULL);
-                ctx->password[len + 1] = '"';
-                ctx->password[len + 2] = 0;
-                ctx->plength = len + 2;
+                pszTmp = malloc(len + 1);
+                pszTmp[len] = 0;
+                WideCharToMultiByte(CP_UTF8, 0, newpassword->Buffer, newpassword->Length / sizeof (wchar_t), pszTmp, (DWORD) len, NULL, NULL);
+                ctx->password = json_encode(pszTmp, len, &ctx->plength);
+                free(pszTmp);
             }
             status = QueueUserWorkItem(password_change_worker, (PVOID) ctx, WT_EXECUTEDEFAULT);
         }

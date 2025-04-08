@@ -20,7 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [2012] [ForgeRock AS]"
- * "Portions Copyrighted [2024] [Wren Security]"
+ * "Portions Copyrighted [2024-2025] [Wren Security]"
  **/
 
 #ifndef __UTILS_H__
@@ -171,8 +171,6 @@ const char *json_payload_type();
 unsigned int net_timeout();
 
 char * md5(const char *plain, size_t len);
-char * base64_encode(const char *input, size_t length, size_t *outlen);
-char * base64_decode(const char *input, size_t length, size_t *outlen);
 
 BOOL read_registry_key(const char *key, char **value);
 void _DEBUG_(const char *fmt, ...);
@@ -186,8 +184,11 @@ char * string_replace(const char *original, const char *pattern, const char *rep
 
 char *utf8_encode(const wchar_t *wstr, size_t *outlen);
 wchar_t *utf8_decode(const char *str, size_t *outlen);
+
 char * base64_decode(const char *input, size_t length, size_t *outlen);
 char * base64_encode(const char *input, size_t length, size_t *outlen);
+
+char * json_encode(const char *input, size_t length, size_t *outlen);
 
 BOOL generate_key(char **b64key, size_t *size);
 BOOL encrypt_password(const char *b64key, const char *data, char ** b64encr);
